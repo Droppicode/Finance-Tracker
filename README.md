@@ -2,6 +2,8 @@
 
 A personal finance tracker application to help you manage your expenses and investments.
 
+*This project was developed as an experiment in AI-assisted programming. A significant portion of the codebase was generated with the help of Google's Gemini, with human oversight for review, integration, and testing.*
+
 ## Features
 
 *   **Dashboard:** Upload your bank statement (PDF) and classify transactions.
