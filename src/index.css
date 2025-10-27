@@ -1,2 +1,7 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
+
+.pdf-page canvas {
+  width: 100% !important;
+  height: auto !important;
+}

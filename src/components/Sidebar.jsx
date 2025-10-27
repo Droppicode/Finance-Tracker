@@ -18,7 +18,7 @@ export default function Sidebar({ currentPage, setCurrentPage, isDarkMode, setIs
     <nav className="w-64 h-full bg-white dark:bg-gray-800 shadow-lg flex-shrink-0 flex flex-col">
       <div className="flex items-center justify-center h-20 border-b border-gray-200 dark:border-gray-700">
         <Banknote className="w-8 h-8 text-blue-600" />
-        <span className="ml-3 text-2xl font-bold text-gray-800 dark:text-gray-100">Finance<span className="text-blue-600">App</span></span>
+        <span className="ml-3 text-2xl font-bold text-gray-800 dark:text-gray-100">Fin<span className="text-blue-600">Track</span></span>
       </div>
       <ul className="py-6 px-4 flex-grow">
         {navItems.map(item => (

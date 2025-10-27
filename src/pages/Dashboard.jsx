@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { Document, Page, pdfjs } from 'react-pdf';
 
 import Header from '../components/Header';
 import Card from '../components/Card';
@@ -8,7 +10,17 @@ import Select from '../components/Select';
 import {
   Upload,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn,
+  ZoomOut
 } from 'lucide-react';
+
+// Configure o worker do PDF.js
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 
 // Dados simulados para transações (viriam do OCR)
@@ -34,6 +46,43 @@ const categoryOptions = [
 export default function DashboardPage() {
 
   const [transactions, setTransactions] = useState(mockTransactions);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [numPages, setNumPages] = useState(null);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [scale, setScale] = useState(1.0);
+
+  const onDrop = useCallback(acceptedFiles => {
+    setUploadedFile(acceptedFiles[0]);
+    setIsPreviewOpen(false);
+    setPageNumber(1);
+    setScale(1.0);
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf'],
+    },
+    multiple: false,
+  });
+
+  const handleUpload = () => {
+    if (uploadedFile) {
+      console.log('Uploading file:', uploadedFile.name);
+      // Lógica de upload e OCR aqui
+    }
+  };
+
+  const onDocumentLoadSuccess = ({ numPages }) => {
+    setNumPages(numPages);
+  };
+
+  const goToPrevPage = () => setPageNumber(prev => Math.max(prev - 1, 1));
+  const goToNextPage = () => setPageNumber(prev => Math.min(prev + 1, numPages));
+
+  const zoomIn = () => setScale(prev => prev + 0.1);
+  const zoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.5));
 
   // Função para atualizar a categoria de uma transação
   const handleCategoryChange = (id, newCategory) => {
@@ -46,21 +95,70 @@ export default function DashboardPage() {
     <div>
       <Header title="Dashboard" />
       
-      {/* Seção de Upload */}
       <Card className="mb-6">
         <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Upload de Extrato (PDF)</h2>
-        <div className="flex flex-col items-center justify-center w-full p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors">
+        <div {...getRootProps()} className={`flex flex-col items-center justify-center w-full p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition-colors ${isDragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''}`}>
+          <input {...getInputProps()} />
           <Upload className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
-          <p className="text-gray-500 dark:text-gray-400 mb-2">Arraste e solte seu extrato PDF aqui ou</p>
-          <Button variant="primary">
-            Selecionar Arquivo
-          </Button>
-          <input type="file" className="hidden" accept=".pdf" />
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">A ferramenta de OCR irá extrair as transações.</p>
+          {isDragActive ?
+            <p className="text-gray-600 dark:text-gray-200">Solte o arquivo aqui...</p> :
+            <p className="text-gray-600 dark:text-gray-200">Arraste e solte o PDF aqui ou clique para selecionar</p>
+          }
         </div>
+        {uploadedFile && (
+          <div className="mt-4 space-y-4">
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-gray-600 dark:text-gray-300">Arquivo: {uploadedFile.name}</p>
+              <div className="flex items-center space-x-2">
+                <Button onClick={() => setIsPreviewOpen(!isPreviewOpen)} variant="secondary">
+                  {isPreviewOpen ? 'Fechar Preview' : 'Abrir Preview'}
+                </Button>
+                <Button onClick={handleUpload} variant="primary">
+                  Processar Arquivo
+                </Button>
+              </div>
+            </div>
+            {isPreviewOpen && (
+              <div className="border rounded-lg p-4 bg-gray-200 dark:bg-gray-900">
+                <div className="max-h-96 overflow-y-auto mb-4">
+                  <Document
+                    file={uploadedFile}
+                    onLoadSuccess={onDocumentLoadSuccess}
+                    className="flex justify-center"
+                  >
+                    <Page pageNumber={pageNumber} scale={scale} className="pdf-page" renderTextLayer={false} renderAnnotationLayer={false} />
+                  </Document>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center space-x-2">
+                    <Button onClick={zoomOut} variant="secondary">
+                      <ZoomOut className="w-5 h-5" />
+                    </Button>
+                    <span className="text-sm text-gray-600 dark:text-gray-300">{(scale * 100).toFixed(0)}%</span>
+                    <Button onClick={zoomIn} variant="secondary">
+                      <ZoomIn className="w-5 h-5" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <Button onClick={goToPrevPage} disabled={pageNumber <= 1} variant="secondary">
+                      <ChevronLeft className="w-5 h-5 mr-1" />
+                      Anterior
+                    </Button>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      Página {pageNumber} de {numPages}
+                    </p>
+                    <Button onClick={goToNextPage} disabled={pageNumber >= numPages} variant="secondary">
+                      Próxima
+                      <ChevronRight className="w-5 h-5 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </Card>
 
-      {/* Seção de Classificação */}
       <Card>
         <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Classificar Transações</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
