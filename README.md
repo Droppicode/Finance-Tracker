@@ -9,15 +9,28 @@ A personal finance tracker application to help you manage your expenses and inve
 *   **Dashboard:** Upload your bank statement (PDF) and classify transactions.
 *   **Expense Analysis:** Visualize your spending by category with interactive bar charts.
 *   **Investment Portfolio:** Track your investment portfolio, view asset allocation with a pie chart, and add new investments.
+*   **User Authentication:** Secure login and registration using JWT and Google OAuth.
 *   **Dark Mode:** A comfortable viewing experience in low-light environments.
 
 ## Technologies Used
+
+### Frontend
 
 *   **Framework:** React
 *   **Build Tool:** Vite
 *   **Styling:** Tailwind CSS
 *   **Charting:** Recharts
 *   **Icons:** Lucide-React
+*   **Routing:** React Router
+*   **HTTP Client:** Axios
+
+### Backend
+
+*   **Framework:** Django
+*   **API:** Django Rest Framework
+*   **Authentication:** dj-rest-auth, django-allauth, simplejwt
+*   **Database:** SQLite3
+*   **CORS:** django-cors-headers
 
 ## Getting Started
 
@@ -26,25 +39,48 @@ To get a local copy up and running, follow these simple steps.
 ### Prerequisites
 
 *   Node.js and npm (or yarn/pnpm)
+*   Python and pip
 
 ### Installation
 
-1.  Clone the repo
+1.  **Clone the repo:**
     ```sh
     git clone https://github.com/your_username/fin-track.git
     ```
-2.  Install NPM packages
+
+2.  **Frontend Setup:**
     ```sh
+    cd client
     npm install
+    ```
+
+3.  **Backend Setup:**
+    ```sh
+    cd backend
+    python -m venv .venv
+    source .venv/bin/activate
+    pip install -r requirements.txt
+    python manage.py migrate
     ```
 
 ### Running the Application
 
-*   **Development Server:**
+*   **Frontend (Development Server):**
     ```bash
+    cd client
     npm run dev
     ```
     Open [http://localhost:5173](http://localhost:5173) (the port may vary) to view it in the browser.
+
+*   **Backend Server:**
+    ```bash
+    cd backend
+    source .venv/bin/activate
+    python manage.py runserver
+    ```
+    The backend server will be running at [http://127.0.0.1:8000/](http://127.0.0.1:8000/).
+
+### Frontend Scripts
 
 *   **Production Build:**
     ```bash
@@ -57,9 +93,17 @@ To get a local copy up and running, follow these simple steps.
     npm run preview
     ```
 
-## Linting
+*   **Linting:**
+    ```bash
+    npm run lint
+    ```
 
-To run the linter and check for code quality, use:
-```bash
-npm run lint
-```
+## API Endpoints
+
+The backend API provides the following endpoints:
+
+*   `/api/auth/google/`: Google OAuth login.
+*   `/api/auth/login/`: JWT-based login.
+*   `/api/auth/logout/`: JWT-based logout.
+*   `/api/auth/user/`: Get user details.
+*   `/api/auth/registration/`: User registration.
