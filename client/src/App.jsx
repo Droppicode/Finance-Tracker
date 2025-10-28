@@ -45,7 +45,6 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/google" element={<Google />} />
       <Route 
         path="/*" 
         element={
