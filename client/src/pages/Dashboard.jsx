@@ -5,7 +5,8 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import Header from '../components/Header';
 import Card from '../components/Card';
 import Button from '../components/Button';
-import Select from '../components/Select';
+import CategoryManager from '../components/CategoryManager';
+import { processStatement } from '../api/statement';
 
 import {
   Upload,
@@ -22,41 +23,35 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
-
-// Dados simulados para transações (viriam do OCR)
-const mockTransactions = [
-  { id: 1, institution: 'Supermercado Pague Menos', amount: 345.60, category: null },
-  { id: 2, institution: 'Posto Shell Av. Central', amount: 150.00, category: null },
-  { id: 3, institution: 'Netflix.com', amount: 55.90, category: 'lazer' },
-  { id: 4, institution: 'Restaurante Sabor Divino', amount: 120.00, category: 'alimentacao' },
-  { id: 5, institution: 'CPFL Energia', amount: 210.80, category: 'casa' },
+const initialCategories = [
+  { value: 'Supermercado', label: 'Supermercado' },
+  { value: 'Transporte', label: 'Transporte' },
+  { value: 'Alimentação', label: 'Alimentação (Restaurante/Delivery)' },
+  { value: 'Lazer', label: 'Lazer e Assinaturas' },
+  { value: 'Casa', label: 'Contas da Casa' },
+  { value: 'Outros', label: 'Outros' },
 ];
-
-// Opções de categoria
-const categoryOptions = [
-  { value: 'supermercado', label: 'Supermercado' },
-  { value: 'transporte', label: 'Transporte' },
-  { value: 'alimentacao', label: 'Alimentação (Restaurante/Delivery)' },
-  { value: 'lazer', label: 'Lazer e Assinaturas' },
-  { value: 'casa', label: 'Contas da Casa' },
-  { value: 'outros', label: 'Outros' },
-];
-
 
 export default function DashboardPage() {
 
-  const [transactions, setTransactions] = useState(mockTransactions);
+  const [transactions, setTransactions] = useState([]);
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
+  const [categories, setCategories] = useState(initialCategories);
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
 
   const onDrop = useCallback(acceptedFiles => {
     setUploadedFile(acceptedFiles[0]);
     setIsPreviewOpen(false);
     setPageNumber(1);
     setScale(1.0);
+    setTransactions([]);
+    setError(null);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -67,10 +62,30 @@ export default function DashboardPage() {
     multiple: false,
   });
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (uploadedFile) {
-      console.log('Uploading file:', uploadedFile.name);
-      // Lógica de upload e OCR aqui
+      setIsProcessing(true);
+      setError(null);
+      try {
+        const extractedTransactions = await processStatement(uploadedFile);
+        const transactionsWithIds = extractedTransactions.map((t, index) => ({ ...t, id: index }));
+
+        // Update categories with new ones from the backend
+        const newCategories = [...categories];
+        transactionsWithIds.forEach(t => {
+          if (t.category && !newCategories.some(c => c.value === t.category)) {
+            newCategories.push({ value: t.category, label: t.category });
+          }
+        });
+        setCategories(newCategories);
+
+        setTransactions(transactionsWithIds);
+      } catch (error) {
+        console.error('Error processing statement:', error);
+        setError('Ocorreu um erro ao processar o arquivo. Por favor, tente novamente.');
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -84,11 +99,32 @@ export default function DashboardPage() {
   const zoomIn = () => setScale(prev => prev + 0.1);
   const zoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.5));
 
-  // Função para atualizar a categoria de uma transação
   const handleCategoryChange = (id, newCategory) => {
     setTransactions(prev =>
       prev.map(t => (t.id === id ? { ...t, category: newCategory } : t))
     );
+    setEditingCategoryId(null);
+  };
+
+  const handleAddCategory = (newCategory) => {
+    if (newCategory && !categories.some(c => c.value === newCategory)) {
+      setCategories([...categories, { value: newCategory, label: newCategory }]);
+    }
+  };
+
+  const handleRemoveCategory = (categoryValue) => {
+    setCategories(categories.filter(c => c.value !== categoryValue));
+    setTransactions(prev => 
+      prev.map(t => (t.category === categoryValue ? { ...t, category: null } : t))
+    );
+  };
+
+  const toggleCategoryEditor = (id) => {
+    if (editingCategoryId === id) {
+      setEditingCategoryId(null);
+    } else {
+      setEditingCategoryId(id);
+    }
   };
 
   return (
@@ -113,11 +149,16 @@ export default function DashboardPage() {
                 <Button onClick={() => setIsPreviewOpen(!isPreviewOpen)} variant="secondary">
                   {isPreviewOpen ? 'Fechar Preview' : 'Abrir Preview'}
                 </Button>
-                <Button onClick={handleUpload} variant="primary">
-                  Processar Arquivo
+                <Button onClick={handleUpload} variant="primary" disabled={isProcessing}>
+                  {isProcessing ? 'Processando...' : 'Processar Arquivo'}
                 </Button>
               </div>
             </div>
+            {error && (
+              <div className="mt-4 text-red-500 dark:text-red-400">
+                {error}
+              </div>
+            )}
             {isPreviewOpen && (
               <div className="border rounded-lg p-4 bg-gray-200 dark:bg-gray-900">
                 <div className="max-h-96 overflow-y-auto mb-4">
@@ -159,48 +200,57 @@ export default function DashboardPage() {
         )}
       </Card>
 
-      <Card>
-        <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Classificar Transações</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Transações extraídas do PDF. Por favor, classifique as que não foram reconhecidas.
-        </p>
-        
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Instituição</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Valor (R$)</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Categoria</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {transactions.map(t => (
-                <tr key={t.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{t.institution}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 dark:text-red-400 font-semibold">
-                    {t.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ minWidth: '200px' }}>
-                    <Select
-                      options={categoryOptions}
-                      value={t.category}
-                      onChange={(e) => handleCategoryChange(t.id, e.target.value)}
-                      placeholder="Selecione uma categoria..."
-                    />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                    <button className="text-gray-400 hover:text-red-500 dark:hover:text-red-400">
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </td>
+      {transactions.length > 0 && (
+        <Card>
+          <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Classificar Transações</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Transações extraídas do PDF. Por favor, classifique as que não foram reconhecidas.
+          </p>
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Data</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Instituição</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Valor (R$)</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Categoria</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ações</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {transactions.map((t, index) => (
+                  <tr key={index}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{t.date}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{t.description}</td>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${t.type === 'credit' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {t.type === 'credit' ? '+' : '-'} {t.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm relative" style={{ minWidth: '200px' }}>
+                      <div onClick={() => toggleCategoryEditor(t.id)} className="cursor-pointer p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        {t.category || 'Selecione uma categoria...'}
+                      </div>
+                      {editingCategoryId === t.id && (
+                        <CategoryManager 
+                          categories={categories}
+                          onSelectCategory={(category) => handleCategoryChange(t.id, category)}
+                          onAddCategory={handleAddCategory}
+                          onRemoveCategory={handleRemoveCategory}
+                        />
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                      <button onClick={() => setTransactions(transactions.filter(trans => trans.id !== t.id))} className="text-gray-400 hover:text-red-500 dark:hover:text-red-400">
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
     </div>
   );
 
