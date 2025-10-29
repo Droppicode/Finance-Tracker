@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from dj_rest_auth.serializers import UserDetailsSerializer
+from .models import Transaction, Category, UserProfile
 
 class CustomUserDetailsSerializer(UserDetailsSerializer):
     profile_picture = serializers.SerializerMethodField()
@@ -14,3 +15,24 @@ class CustomUserDetailsSerializer(UserDetailsSerializer):
             return social_account.extra_data.get('picture')
         except Exception:
             return None
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ('id', 'name')
+
+class TransactionSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')
+    category = CategorySerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), source='category', write_only=True, required=False, allow_null=True
+    )
+
+    class Meta:
+        model = Transaction
+        fields = ('id', 'user', 'date', 'description', 'amount', 'type', 'category', 'category_id')
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ('theme',)

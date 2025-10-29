@@ -16,13 +16,20 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from api.views import GoogleLogin, ProcessStatementView
+from rest_framework.routers import DefaultRouter
+from api import views
+
+router = DefaultRouter()
+router.register(r'transactions', views.TransactionViewSet, basename='transaction')
+router.register(r'categories', views.CategoryViewSet, basename='category')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/process-statement/', ProcessStatementView.as_view(), name='process_statement'),
+    path('api/process-statement/', views.ProcessStatementView.as_view(), name='process_statement'),
+    path('api/profile/', views.UserProfileView.as_view(), name='user_profile'),
+    path('api/', include(router.urls)),
     path('auth/', include('dj_rest_auth.urls')),
     path('auth/registration/', include('dj_rest_auth.registration.urls')),
-    path('auth/google/', GoogleLogin.as_view(), name='google_login'),
+    path('auth/google/', views.GoogleLogin.as_view(), name='google_login'),
     path('accounts/', include('allauth.urls')),
 ]

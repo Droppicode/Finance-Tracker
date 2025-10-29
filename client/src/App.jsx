@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
+import { getProfile, updateProfile } from './api/profile';
 import DashboardPage from './pages/Dashboard';
 import GastosPage from './pages/Gastos';
 import InvestimentosPage from './pages/Investimentos';
@@ -35,12 +36,44 @@ const AppRoutes = () => {
 
   useEffect(() => {
     const root = window.document.documentElement;
+    const localTheme = localStorage.getItem('theme');
+    if (localTheme) {
+      setIsDarkMode(localTheme === 'dark');
+    }
+
+    const fetchProfile = async () => {
+      try {
+        const response = await getProfile();
+        const theme = response.data.theme;
+        setIsDarkMode(theme === 'dark');
+        localStorage.setItem('theme', theme);
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  useEffect(() => {
+    const root = window.document.documentElement;
     if (isDarkMode) {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
   }, [isDarkMode]);
+
+  const handleSetIsDarkMode = async (newIsDarkMode) => {
+    setIsDarkMode(newIsDarkMode);
+    const newTheme = newIsDarkMode ? 'dark' : 'light';
+    localStorage.setItem('theme', newTheme);
+    try {
+      await updateProfile({ theme: newTheme });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
+  };
 
   return (
     <Routes>
@@ -49,7 +82,7 @@ const AppRoutes = () => {
         path="/*" 
         element={
           <PrivateRoute>
-            <MainLayout isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode}>
+            <MainLayout isDarkMode={isDarkMode} setIsDarkMode={handleSetIsDarkMode}>
               <Routes>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/gastos" element={<GastosPage />} />
