@@ -27,6 +27,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/process-statement/', views.ProcessStatementView.as_view(), name='process_statement'),
     path('api/profile/', views.UserProfileView.as_view(), name='user_profile'),
+    path('api/investments/search/', views.InvestmentSearchView.as_view(), name='investment_search'),
     path('api/', include(router.urls)),
     path('auth/', include('dj_rest_auth.urls')),
     path('auth/registration/', include('dj_rest_auth.registration.urls')),

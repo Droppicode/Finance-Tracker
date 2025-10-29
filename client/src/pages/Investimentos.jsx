@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import axiosInstance from '../api/axios';
 
 import Header from '../components/Header';
 import Card from '../components/Card';
@@ -9,6 +10,7 @@ import Input from '../components/Input';
 // Importando ícones da biblioteca lucide-react
 import {
   Plus,
+  Search,
 } from 'lucide-react';
 
 // Importando componentes de gráficos da biblioteca recharts
@@ -40,6 +42,11 @@ export default function InvestimentosPage() {
   const [assetName, setAssetName] = useState('');
   const [assetValue, setAssetValue] = useState('');
   const [assetType, setAssetType] = useState('');
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const [searchError, setSearchError] = useState(null);
 
   const investmentOptions = [
     { value: 'rf', label: 'Renda Fixa (RF)' },
@@ -77,6 +84,26 @@ export default function InvestimentosPage() {
     setAssetType('');
   };
 
+  const handleSearch = async () => {
+    if (!searchTerm.trim()) {
+      setSearchResults([]);
+      setSearchError(null);
+      return;
+    }
+    setLoadingSearch(true);
+    setSearchError(null);
+    try {
+      const response = await axiosInstance.get(`/api/investments/search/?symbol=${searchTerm}`);
+      setSearchResults(response.data.data || []);
+    } catch (err) {
+      console.error("Erro ao buscar investimentos:", err);
+      setSearchError("Erro ao buscar investimentos. Tente novamente.");
+      setSearchResults([]);
+    } finally {
+      setLoadingSearch(false);
+    }
+  };
+
   const totalInvested = useMemo(() => {
     return investments.reduce((acc, item) => acc + item.value, 0);
   }, [investments]);
@@ -86,6 +113,49 @@ export default function InvestimentosPage() {
       <Header title="Carteira de Investimentos" />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Coluna de Busca de Investimentos */}
+        <div className="lg:col-span-1">
+          <Card>
+            <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Buscar Investimento</h2>
+            <div className="flex space-x-2 mb-4">
+              <Input
+                placeholder="Buscar por símbolo (ex: AAPL, PETR4)"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch();
+                  }
+                }}
+              />
+              <Button onClick={handleSearch} disabled={loadingSearch} icon={Search}>
+                Buscar
+              </Button>
+            </div>
+
+            {loadingSearch && <p className="text-blue-500 dark:text-blue-400">Buscando...</p>}
+            {searchError && <p className="text-red-500 dark:text-red-400">{searchError}</p>}
+
+            {searchResults.length > 0 && (
+              <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Resultados da Busca:</h3>
+                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {searchResults.map((result) => (
+                    <li key={result.symbol+':'+result.mic_code} className="py-2 flex justify-between items-center">
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{result.symbol} - {result.instrument_name}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{result.exchange} ({result.country})</p>
+                      </div>
+                      {/* Aqui você pode adicionar um botão para 'Adicionar à carteira' */}
+                      <Button variant="secondary" size="sm">Adicionar</Button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </Card>
+        </div>
+
         {/* Coluna do Formulário */}
         <div className="lg:col-span-1">
           <Card>
@@ -125,7 +195,7 @@ export default function InvestimentosPage() {
         </div>
 
         {/* Coluna do Gráfico */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-1">
           <Card>
             <div className="flex justify-between items-center mb-2">
               <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Alocação da Carteira</h2>
