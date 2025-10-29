@@ -25,6 +25,8 @@ def extract_transactions_from_text(text):
     - Type (credit or debit)
     - Category in Portuguese (e.g., Alimentação, Transporte, Lazer, Salário, etc.)
 
+    **Important**: The descriptions must be kept in Portuguese and should be short and direct.
+
     Return the information in a JSON format, as a list of objects.
     For example:
     [

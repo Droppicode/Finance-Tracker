@@ -31,20 +31,37 @@ class ProcessStatementView(APIView):
 
             created_transactions = []
             for t_data in extracted_transactions:
+                # Find or create the category
                 category_name = t_data.pop('category', None)
                 category = None
                 if category_name:
                     category, _ = Category.objects.get_or_create(user=request.user, name=category_name)
-                
-                t_data['category_id'] = category.id if category else None
-                
-                serializer = TransactionSerializer(data=t_data)
-                if serializer.is_valid():
-                    serializer.save(user=request.user)
+
+                # Prepare data for get_or_create
+                # The unique key for a transaction, description is removed to avoid issues with AI variations
+                lookup_fields = {
+                    'user': request.user,
+                    'date': t_data.get('date'),
+                    'amount': t_data.get('amount'),
+                    'type': t_data.get('type'),
+                }
+
+                # Fields to be set only on creation, including the description
+                defaults = {
+                    'description': t_data.get('description'),
+                    'category': category
+                }
+
+                # Use get_or_create to avoid duplicates
+                transaction, created = Transaction.objects.get_or_create(
+                    **lookup_fields,
+                    defaults=defaults
+                )
+
+                if created:
+                    # Serialize and add to the list of newly created transactions
+                    serializer = TransactionSerializer(transaction)
                     created_transactions.append(serializer.data)
-                else:
-                    # Handle serializer errors if necessary
-                    logging.error(f"Error saving transaction: {serializer.errors}")
 
             return Response(created_transactions, status=status.HTTP_200_OK)
         except Exception as e:
@@ -56,9 +73,11 @@ class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all()
 
     def get_queryset(self):
+        # Filtra para retornar apenas as categorias do usuário logado
         return self.queryset.filter(user=self.request.user)
 
     def perform_create(self, serializer):
+        # Ação customizada ao criar, linka ao usuário
         serializer.save(user=self.request.user)
 
 class CategoryViewSet(viewsets.ModelViewSet):
