@@ -17,6 +17,12 @@ import {
   ZoomOut
 } from 'lucide-react';
 
+// Helper to get date strings in YYYY-MM-DD format
+const toYYYYMMDD = (date) => {
+  if (!date) return '';
+  return date.toISOString().split('T')[0];
+}
+
 // Configure o worker do PDF.js
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -33,6 +39,9 @@ export default function DashboardPage() {
     addCategory,
     removeCategory,
     loading,
+    startDate,
+    endDate,
+    setDateRange,
   } = useTransactions();
 
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -173,12 +182,26 @@ export default function DashboardPage() {
 
       {loading ? (
         <p>Carregando transações...</p>
-      ) : transactions.length > 0 && (
+      ) : (
         <Card>
-          <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Classificar Transações</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Transações extraídas do PDF. Por favor, classifique as que não foram reconhecidas.
-          </p>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Transações</h2>
+            <div className="flex items-center space-x-2">
+                <input 
+                    type="date" 
+                    value={toYYYYMMDD(startDate)}
+                    onChange={(e) => setDateRange(new Date(e.target.value), endDate)}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                />
+                <span className="text-gray-500">até</span>
+                <input 
+                    type="date" 
+                    value={toYYYYMMDD(endDate)}
+                    onChange={(e) => setDateRange(startDate, new Date(e.target.value))}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                />
+            </div>
+          </div>
           
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">

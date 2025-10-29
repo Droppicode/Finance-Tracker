@@ -1,8 +1,9 @@
-import { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import { AuthContext } from './AuthContext';
 import { getTransactions, updateTransaction, deleteTransaction } from '../api/transactions';
 import { getCategories, createCategory, deleteCategory } from '../api/categories';
 import { processStatement } from '../api/statement';
+import { getProfile, updateProfile } from '../api/profile';
 
 const TransactionContext = createContext();
 
@@ -10,11 +11,26 @@ export const useTransactions = () => {
   return useContext(TransactionContext);
 };
 
+// Helper to get date strings in YYYY-MM-DD format
+const toYYYYMMDD = (date) => {
+  if (!date) return '';
+  // Adjust for timezone offset before converting to ISO string
+  const tempDate = new Date(date.valueOf() - date.getTimezoneOffset() * 60000);
+  return tempDate.toISOString().split('T')[0];
+}
+
 export const TransactionProvider = ({ children }) => {
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const [endDate, setEndDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 30);
+    return date;
+  });
 
   const { isAuthenticated } = useContext(AuthContext);
 
@@ -22,12 +38,22 @@ export const TransactionProvider = ({ children }) => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const [transactionsRes, categoriesRes] = await Promise.all([
+        const [transactionsRes, categoriesRes, profileRes] = await Promise.all([
           getTransactions(),
           getCategories(),
+          getProfile(),
         ]);
+        
         setTransactions(transactionsRes.data);
         setCategories(categoriesRes.data);
+
+        // Set dates from profile if they exist
+        const { start_date, end_date } = profileRes.data;
+        if (start_date && end_date) {
+          setStartDate(new Date(start_date));
+          setEndDate(new Date(end_date));
+        }
+
         setError(null);
       } catch (err) {
         console.error("Error loading data:", err);
@@ -40,24 +66,55 @@ export const TransactionProvider = ({ children }) => {
     if (isAuthenticated) {
       loadData();
     } else {
-      // Clear data when user is not authenticated (e.g., on logout)
       setTransactions([]);
       setCategories([]);
       setLoading(false);
     }
   }, [isAuthenticated]);
 
+  // Debounced effect to save date range to profile
+  useEffect(() => {
+    if (!isAuthenticated || loading) return;
+
+    const handler = setTimeout(() => {
+      updateProfile({ 
+        start_date: toYYYYMMDD(startDate),
+        end_date: toYYYYMMDD(endDate),
+      }).catch(err => console.error("Failed to save date range:", err));
+    }, 1000); // Save 1 second after the last change
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [startDate, endDate, isAuthenticated, loading]);
+
+  const filteredTransactions = useMemo(() => {
+    if (!startDate || !endDate) return transactions;
+    
+    const start = toYYYYMMDD(startDate);
+    const end = toYYYYMMDD(endDate);
+
+    return transactions.filter(t => {
+      const transactionDate = t.date;
+      return transactionDate >= start && transactionDate <= end;
+    });
+  }, [transactions, startDate, endDate]);
+
+  const setDateRange = (start, end) => {
+    setStartDate(start);
+    setEndDate(end);
+  }
+
   const handleProcessStatement = async (file) => {
     try {
       const response = await processStatement(file);
-      const newTransactions = response.data; // Assuming API returns { data: [...] }
-      setTransactions(prev => [...prev, ...newTransactions]);
-      // Re-fetch categories in case new ones were created
+      const newTransactions = response.data;
+      setTransactions(prev => [...prev, ...newTransactions].sort((a, b) => new Date(b.date) - new Date(a.date)));
       const categoriesRes = await getCategories();
       setCategories(categoriesRes.data);
     } catch (err) {
       console.error("Error processing statement:", err);
-      throw err; // Re-throw to be caught in the component
+      throw err;
     }
   };
 
@@ -110,10 +167,13 @@ export const TransactionProvider = ({ children }) => {
   };
 
   const value = {
-    transactions,
+    transactions: filteredTransactions,
     categories,
     loading,
     error,
+    startDate,
+    endDate,
+    setDateRange,
     processStatement: handleProcessStatement,
     deleteTransaction: handleDeleteTransaction,
     updateTransactionCategory: handleUpdateTransactionCategory,

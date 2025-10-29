@@ -1,14 +1,7 @@
 import { useMemo } from 'react';
 import Header from '../components/Header';
 import Card from '../components/Card';
-import Button from '../components/Button';
 import { useTransactions } from '../context/TransactionContext';
-
-// Importando ícones da biblioteca lucide-react
-import {
-  Filter,
-  CalendarDays,
-} from 'lucide-react';
 
 // Importando componentes de gráficos da biblioteca recharts
 import {
@@ -21,8 +14,14 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
+// Helper to get date strings in YYYY-MM-DD format
+const toYYYYMMDD = (date) => {
+  if (!date) return '';
+  return date.toISOString().split('T')[0];
+}
+
 export default function GastosPage() {
-  const { transactions, loading } = useTransactions();
+  const { transactions, loading, startDate, endDate, setDateRange } = useTransactions();
 
   const spendingData = useMemo(() => {
     if (!transactions) return [];
@@ -58,18 +57,24 @@ export default function GastosPage() {
       <Header title="Análise de Gastos" />
       
       {/* Seção de Filtros */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Filtrar por Tipo</h3>
-          <Button variant="secondary" icon={Filter}>
-            Todos os Tipos
-          </Button>
-        </Card>
-        <Card className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Filtrar por Data</h3>
-          <Button variant="secondary" icon={CalendarDays}>
-            Desde o início
-          </Button>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <Card>
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Filtrar por Data</h3>
+            <div className="flex items-center space-x-2">
+                <input 
+                    type="date" 
+                    value={toYYYYMMDD(startDate)}
+                    onChange={(e) => setDateRange(new Date(e.target.value), endDate)}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                />
+                <span className="text-gray-500">até</span>
+                <input 
+                    type="date" 
+                    value={toYYYYMMDD(endDate)}
+                    onChange={(e) => setDateRange(startDate, new Date(e.target.value))}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                />
+            </div>
         </Card>
         <Card className="bg-blue-600 text-white">
           <h3 className="text-sm font-medium text-blue-200">Total Gasto (Período)</h3>

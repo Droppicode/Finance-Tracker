@@ -73,8 +73,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all()
 
     def get_queryset(self):
-        # Filtra para retornar apenas as categorias do usuário logado
-        return self.queryset.filter(user=self.request.user)
+        # Filtra para retornar apenas as transações do usuário logado
+        return self.queryset.filter(user=self.request.user).order_by('-date')
 
     def perform_create(self, serializer):
         # Ação customizada ao criar, linka ao usuário
