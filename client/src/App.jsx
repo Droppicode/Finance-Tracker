@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
+import { TransactionProvider } from './context/TransactionContext';
 import { getProfile, updateProfile } from './api/profile';
 import DashboardPage from './pages/Dashboard';
 import GastosPage from './pages/Gastos';
@@ -33,9 +34,9 @@ const PrivateRoute = ({ children }) => {
 
 const AppRoutes = () => {
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const { isAuthenticated } = useContext(AuthContext);
 
   useEffect(() => {
-    const root = window.document.documentElement;
     const localTheme = localStorage.getItem('theme');
     if (localTheme) {
       setIsDarkMode(localTheme === 'dark');
@@ -52,8 +53,10 @@ const AppRoutes = () => {
       }
     };
 
-    fetchProfile();
-  }, []);
+    if (isAuthenticated) {
+      fetchProfile();
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -100,7 +103,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <TransactionProvider>
+          <AppRoutes />
+        </TransactionProvider>
       </AuthProvider>
     </BrowserRouter>
   );

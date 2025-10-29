@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import Header from '../components/Header';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import { useTransactions } from '../context/TransactionContext';
 
 // Importando ícones da biblioteca lucide-react
 import {
@@ -19,20 +21,39 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
-
-// Dados simulados para o gráfico de gastos
-const mockSpendingData = [
-  { name: 'Supermercado', value: 850.50 },
-  { name: 'Transporte', value: 420.00 },
-  { name: 'Lazer', value: 310.00 },
-  { name: 'Alimentação', value: 550.70 },
-  { name: 'Casa', value: 210.80 },
-  { name: 'Outros', value: 150.00 },
-];
-
-
 export default function GastosPage() {
-    return (
+  const { transactions, loading } = useTransactions();
+
+  const spendingData = useMemo(() => {
+    if (!transactions) return [];
+
+    const spendingByCategory = transactions
+      .filter(t => t.type === 'debit' && t.category)
+      .reduce((acc, transaction) => {
+        const categoryName = transaction.category.name;
+        const amount = Number(transaction.amount);
+        if (!acc[categoryName]) {
+          acc[categoryName] = 0;
+        }
+        acc[categoryName] += amount;
+        return acc;
+      }, {});
+
+    return Object.entries(spendingByCategory).map(([name, value]) => ({
+      name,
+      value,
+    }));
+  }, [transactions]);
+
+  const totalSpent = useMemo(() => {
+    return spendingData.reduce((acc, item) => acc + item.value, 0);
+  }, [spendingData]);
+
+  if (loading) {
+    return <p>Carregando dados de gastos...</p>;
+  }
+
+  return (
     <div>
       <Header title="Análise de Gastos" />
       
@@ -53,9 +74,7 @@ export default function GastosPage() {
         <Card className="bg-blue-600 text-white">
           <h3 className="text-sm font-medium text-blue-200">Total Gasto (Período)</h3>
           <p className="text-3xl font-bold">
-            {mockSpendingData
-              .reduce((acc, item) => acc + item.value, 0)
-              .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            {totalSpent.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
           </p>
         </Card>
       </div>
@@ -66,14 +85,14 @@ export default function GastosPage() {
         <div style={{ width: '100%', height: 400 }}>
           <ResponsiveContainer>
             <BarChart
-              data={mockSpendingData}
+              data={spendingData}
               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
             >
               <XAxis dataKey="name" stroke="#9ca3af" />
               <YAxis stroke="#9ca3af" tickFormatter={(value) => `R$${value}`} />
               <Tooltip
                 formatter={(value) =>
-                  value.toLocaleString('pt-BR', {
+                  Number(value).toLocaleString('pt-BR', {
                     style: 'currency',
                     currency: 'BRL',
                   })

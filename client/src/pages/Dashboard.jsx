@@ -1,14 +1,12 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Document, Page, pdfjs } from 'react-pdf';
+import { useTransactions } from '../context/TransactionContext';
 
 import Header from '../components/Header';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import CategoryManager from '../components/CategoryManager';
-import { processStatement } from '../api/statement';
-import { getTransactions, updateTransaction, deleteTransaction } from '../api/transactions';
-import { getCategories, createCategory, deleteCategory } from '../api/categories';
 
 import {
   Upload,
@@ -26,8 +24,17 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 export default function DashboardPage() {
+  const {
+    transactions,
+    categories,
+    processStatement,
+    deleteTransaction,
+    updateTransactionCategory,
+    addCategory,
+    removeCategory,
+    loading,
+  } = useTransactions();
 
-  const [transactions, setTransactions] = useState([]);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
@@ -35,35 +42,7 @@ export default function DashboardPage() {
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
-  const [categories, setCategories] = useState([]);
   const [editingCategoryId, setEditingCategoryId] = useState(null);
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const cachedTransactions = localStorage.getItem('transactions');
-        if (cachedTransactions) {
-          setTransactions(JSON.parse(cachedTransactions));
-        }
-        const transactionsResponse = await getTransactions();
-        setTransactions(transactionsResponse.data);
-        localStorage.setItem('transactions', JSON.stringify(transactionsResponse.data));
-
-        const cachedCategories = localStorage.getItem('categories');
-        if (cachedCategories) {
-          setCategories(JSON.parse(cachedCategories));
-        }
-        const categoriesResponse = await getCategories();
-        setCategories(categoriesResponse.data);
-        localStorage.setItem('categories', JSON.stringify(categoriesResponse.data));
-
-      } catch (error) {
-        console.error('Error loading data:', error);
-        setError('Ocorreu um erro ao carregar os dados.');
-      }
-    };
-    loadData();
-  }, []);
 
   const onDrop = useCallback(acceptedFiles => {
     setUploadedFile(acceptedFiles[0]);
@@ -86,10 +65,7 @@ export default function DashboardPage() {
       setIsProcessing(true);
       setError(null);
       try {
-        const newTransactions = await processStatement(uploadedFile);
-        const updatedTransactions = [...transactions, ...newTransactions];
-        setTransactions(updatedTransactions);
-        localStorage.setItem('transactions', JSON.stringify(updatedTransactions));
+        await processStatement(uploadedFile);
       } catch (error) {
         console.error('Error processing statement:', error);
         setError('Ocorreu um erro ao processar o arquivo. Por favor, tente novamente.');
@@ -110,66 +86,8 @@ export default function DashboardPage() {
   const zoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.5));
 
   const handleCategoryChange = async (id, newCategoryId) => {
-    const originalTransactions = [...transactions];
-    const selectedCategory = categories.find(c => c.id === newCategoryId);
-
-    const updatedTransactions = transactions.map(t => 
-      t.id === id ? { ...t, category: selectedCategory } : t
-    );
-    setTransactions(updatedTransactions);
+    await updateTransactionCategory(id, newCategoryId);
     setEditingCategoryId(null);
-    try {
-      await updateTransaction(id, { category_id: newCategoryId });
-      localStorage.setItem('transactions', JSON.stringify(updatedTransactions));
-    } catch (error) {
-      console.error('Error updating transaction:', error);
-      setTransactions(originalTransactions);
-    }
-  };
-
-  const handleAddCategory = async (newCategoryName) => {
-    if (newCategoryName && !categories.some(c => c.name === newCategoryName)) {
-      try {
-        const response = await createCategory({ name: newCategoryName });
-        const newCategory = response.data;
-        const updatedCategories = [...categories, newCategory];
-        setCategories(updatedCategories);
-        localStorage.setItem('categories', JSON.stringify(updatedCategories));
-      } catch (error) {
-        console.error('Error adding category:', error);
-      }
-    }
-  };
-
-  const handleRemoveCategory = async (categoryId) => {
-    const originalCategories = [...categories];
-    const updatedCategories = categories.filter(c => c.id !== categoryId);
-    setCategories(updatedCategories);
-    const updatedTransactions = transactions.map(t => 
-      t.category?.id === categoryId ? { ...t, category: null } : t
-    );
-    setTransactions(updatedTransactions);
-    try {
-      await deleteCategory(categoryId);
-      localStorage.setItem('categories', JSON.stringify(updatedCategories));
-      localStorage.setItem('transactions', JSON.stringify(updatedTransactions));
-    } catch (error) {
-      console.error('Error deleting category:', error);
-      setCategories(originalCategories);
-    }
-  };
-
-  const handleDeleteTransaction = async (id) => {
-    const originalTransactions = [...transactions];
-    const updatedTransactions = transactions.filter(t => t.id !== id);
-    setTransactions(updatedTransactions);
-    try {
-      await deleteTransaction(id);
-      localStorage.setItem('transactions', JSON.stringify(updatedTransactions));
-    } catch (error) {
-      console.error('Error deleting transaction:', error);
-      setTransactions(originalTransactions);
-    }
   };
 
   const toggleCategoryEditor = (id) => {
@@ -253,7 +171,9 @@ export default function DashboardPage() {
         )}
       </Card>
 
-      {transactions.length > 0 && (
+      {loading ? (
+        <p>Carregando transações...</p>
+      ) : transactions.length > 0 && (
         <Card>
           <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Classificar Transações</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
@@ -272,12 +192,12 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {transactions.map((t, index) => (
-                  <tr key={index}>
+                {transactions.map((t) => (
+                  <tr key={t.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{t.date}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{t.description}</td>
                     <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${t.type === 'credit' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {t.type === 'credit' ? '+' : '-'} {t.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      {t.type === 'credit' ? '+' : '-'} {(Number(t.amount) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm relative" style={{ minWidth: '200px' }}>
                       <div onClick={() => toggleCategoryEditor(t.id)} className="cursor-pointer p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
@@ -287,13 +207,13 @@ export default function DashboardPage() {
                         <CategoryManager 
                           categories={categories.map(c => ({ value: c.id, label: c.name }))}
                           onSelectCategory={(category) => handleCategoryChange(t.id, category)}
-                          onAddCategory={handleAddCategory}
-                          onRemoveCategory={handleRemoveCategory}
+                          onAddCategory={addCategory}
+                          onRemoveCategory={removeCategory}
                         />
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                      <button onClick={() => handleDeleteTransaction(t.id)} className="text-gray-400 hover:text-red-500 dark:hover:text-red-400">
+                      <button onClick={() => deleteTransaction(t.id)} className="text-gray-400 hover:text-red-500 dark:hover:text-red-400">
                         <Trash2 className="w-5 h-5" />
                       </button>
                     </td>
