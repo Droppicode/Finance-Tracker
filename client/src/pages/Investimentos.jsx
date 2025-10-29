@@ -1,16 +1,15 @@
-import { useState, useMemo } from 'react';
-import axiosInstance from '../api/axios';
+import { useState, useMemo, useRef } from 'react';
 
 import Header from '../components/Header';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Select from '../components/Select';
 import Input from '../components/Input';
+import InvestmentSearchPopover from '../components/InvestmentSearchPopover'; 
 
 // Importando ícones da biblioteca lucide-react
 import {
   Plus,
-  Search,
 } from 'lucide-react';
 
 // Importando componentes de gráficos da biblioteca recharts
@@ -43,10 +42,8 @@ export default function InvestimentosPage() {
   const [assetValue, setAssetValue] = useState('');
   const [assetType, setAssetType] = useState('');
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [loadingSearch, setLoadingSearch] = useState(false);
-  const [searchError, setSearchError] = useState(null);
+  const [showSearchPopover, setShowSearchPopover] = useState(false);
+  const searchPopoverRef = useRef(null); // Ref to hold the handleSearch function from popover
 
   const investmentOptions = [
     { value: 'rf', label: 'Renda Fixa (RF)' },
@@ -55,6 +52,13 @@ export default function InvestimentosPage() {
     { value: 'acoes_eua', label: 'Ações (EUA)' },
     { value: 'crypto', label: 'Criptomoedas' },
   ];
+
+  const handleSelectInvestment = (investment) => {
+    setAssetName(`${investment.symbol} - ${investment.instrument_name}`);
+    // Optionally, try to pre-fill assetType based on investment.type or other data
+    // For now, we'll leave assetType for manual selection or more complex logic
+    setShowSearchPopover(false);
+  };
 
   const handleAddInvestment = (e) => {
     e.preventDefault();
@@ -84,26 +88,6 @@ export default function InvestimentosPage() {
     setAssetType('');
   };
 
-  const handleSearch = async () => {
-    if (!searchTerm.trim()) {
-      setSearchResults([]);
-      setSearchError(null);
-      return;
-    }
-    setLoadingSearch(true);
-    setSearchError(null);
-    try {
-      const response = await axiosInstance.get(`/api/investments/search/?symbol=${searchTerm}`);
-      setSearchResults(response.data.data || []);
-    } catch (err) {
-      console.error("Erro ao buscar investimentos:", err);
-      setSearchError("Erro ao buscar investimentos. Tente novamente.");
-      setSearchResults([]);
-    } finally {
-      setLoadingSearch(false);
-    }
-  };
-
   const totalInvested = useMemo(() => {
     return investments.reduce((acc, item) => acc + item.value, 0);
   }, [investments]);
@@ -113,61 +97,37 @@ export default function InvestimentosPage() {
       <Header title="Carteira de Investimentos" />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Coluna de Busca de Investimentos */}
-        <div className="lg:col-span-1">
-          <Card>
-            <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Buscar Investimento</h2>
-            <div className="flex space-x-2 mb-4">
-              <Input
-                placeholder="Buscar por símbolo (ex: AAPL, PETR4)"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSearch();
-                  }
-                }}
-              />
-              <Button onClick={handleSearch} disabled={loadingSearch} icon={Search}>
-                Buscar
-              </Button>
-            </div>
-
-            {loadingSearch && <p className="text-blue-500 dark:text-blue-400">Buscando...</p>}
-            {searchError && <p className="text-red-500 dark:text-red-400">{searchError}</p>}
-
-            {searchResults.length > 0 && (
-              <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-                <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Resultados da Busca:</h3>
-                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {searchResults.map((result) => (
-                    <li key={result.symbol+':'+result.mic_code} className="py-2 flex justify-between items-center">
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">{result.symbol} - {result.instrument_name}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{result.exchange} ({result.country})</p>
-                      </div>
-                      {/* Aqui você pode adicionar um botão para 'Adicionar à carteira' */}
-                      <Button variant="secondary" size="sm">Adicionar</Button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </Card>
-        </div>
-
         {/* Coluna do Formulário */}
         <div className="lg:col-span-1">
           <Card>
             <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Adicionar Investimento</h2>
             <form onSubmit={handleAddInvestment} className="space-y-4">
-              <div>
+              <div className="relative"> {/* Added relative positioning here */}
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ativo / Onde</label>
                 <Input
                   placeholder="Ex: Tesouro Selic 2029, MXRF11"
                   value={assetName}
-                  onChange={(e) => setAssetName(e.target.value)}
+                  onChange={(e) => {
+                    setAssetName(e.target.value);
+                    setShowSearchPopover(true); // Show popover on change
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault(); // Prevent form submission
+                      if (searchPopoverRef.current) {
+                        searchPopoverRef.current(); // Trigger search in popover
+                      }
+                    }
+                  }}
                 />
+                {showSearchPopover && (
+                  <InvestmentSearchPopover
+                    searchTerm={assetName}
+                    onSearchSubmit={searchPopoverRef} // Pass the ref
+                    onSelectInvestment={handleSelectInvestment}
+                    onClose={() => setShowSearchPopover(false)}
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valor Investido (R$)</label>
