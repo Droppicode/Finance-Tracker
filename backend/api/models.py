@@ -27,6 +27,7 @@ class UserProfile(models.Model):
     theme = models.CharField(max_length=10, default='dark')
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
+    filtered_categories = models.JSONField(default=list, null=True, blank=True)
 
     def __str__(self):
         return self.user.username

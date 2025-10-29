@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useContext, useMemo, useCallback } from 'react';
+import { createContext, useState, useEffect, useContext, useMemo } from 'react';
 import { AuthContext } from './AuthContext';
 import { getTransactions, updateTransaction, deleteTransaction } from '../api/transactions';
 import { getCategories, createCategory, deleteCategory } from '../api/categories';
@@ -11,10 +11,8 @@ export const useTransactions = () => {
   return useContext(TransactionContext);
 };
 
-// Helper to get date strings in YYYY-MM-DD format
 const toYYYYMMDD = (date) => {
   if (!date) return '';
-  // Adjust for timezone offset before converting to ISO string
   const tempDate = new Date(date.valueOf() - date.getTimezoneOffset() * 60000);
   return tempDate.toISOString().split('T')[0];
 }
@@ -31,6 +29,7 @@ export const TransactionProvider = ({ children }) => {
     date.setDate(date.getDate() - 30);
     return date;
   });
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
 
   const { isAuthenticated } = useContext(AuthContext);
 
@@ -47,11 +46,13 @@ export const TransactionProvider = ({ children }) => {
         setTransactions(transactionsRes.data);
         setCategories(categoriesRes.data);
 
-        // Set dates from profile if they exist
-        const { start_date, end_date } = profileRes.data;
+        const { start_date, end_date, filtered_categories } = profileRes.data;
         if (start_date && end_date) {
           setStartDate(new Date(start_date));
           setEndDate(new Date(end_date));
+        }
+        if (filtered_categories) {
+          setSelectedCategoryIds(filtered_categories);
         }
 
         setError(null);
@@ -72,7 +73,7 @@ export const TransactionProvider = ({ children }) => {
     }
   }, [isAuthenticated]);
 
-  // Debounced effect to save date range to profile
+  // Debounced effect to save preferences to profile
   useEffect(() => {
     if (!isAuthenticated || loading) return;
 
@@ -80,30 +81,44 @@ export const TransactionProvider = ({ children }) => {
       updateProfile({ 
         start_date: toYYYYMMDD(startDate),
         end_date: toYYYYMMDD(endDate),
-      }).catch(err => console.error("Failed to save date range:", err));
-    }, 1000); // Save 1 second after the last change
+        filtered_categories: selectedCategoryIds,
+      }).catch(err => console.error("Failed to save preferences:", err));
+    }, 1000);
 
     return () => {
       clearTimeout(handler);
     };
-  }, [startDate, endDate, isAuthenticated, loading]);
+  }, [startDate, endDate, selectedCategoryIds, isAuthenticated, loading]);
 
   const filteredTransactions = useMemo(() => {
-    if (!startDate || !endDate) return transactions;
-    
     const start = toYYYYMMDD(startDate);
     const end = toYYYYMMDD(endDate);
 
-    return transactions.filter(t => {
+    const dateFiltered = transactions.filter(t => {
       const transactionDate = t.date;
       return transactionDate >= start && transactionDate <= end;
     });
-  }, [transactions, startDate, endDate]);
+
+    if (selectedCategoryIds.length === 0) {
+      return dateFiltered;
+    }
+
+    return dateFiltered.filter(t => t.category && selectedCategoryIds.includes(t.category.id));
+
+  }, [transactions, startDate, endDate, selectedCategoryIds]);
 
   const setDateRange = (start, end) => {
     setStartDate(start);
     setEndDate(end);
   }
+
+  const toggleCategoryFilter = (categoryId) => {
+    setSelectedCategoryIds(prevIds => 
+      prevIds.includes(categoryId) 
+        ? prevIds.filter(id => id !== categoryId)
+        : [...prevIds, categoryId]
+    );
+  };
 
   const handleProcessStatement = async (file) => {
     try {
@@ -174,6 +189,8 @@ export const TransactionProvider = ({ children }) => {
     startDate,
     endDate,
     setDateRange,
+    selectedCategoryIds,
+    toggleCategoryFilter,
     processStatement: handleProcessStatement,
     deleteTransaction: handleDeleteTransaction,
     updateTransactionCategory: handleUpdateTransactionCategory,

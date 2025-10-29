@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import Header from '../components/Header';
 import Card from '../components/Card';
 import { useTransactions } from '../context/TransactionContext';
+import CategoryFilter from '../components/CategoryFilter';
 
 // Importando componentes de gráficos da biblioteca recharts
 import {
@@ -21,7 +22,16 @@ const toYYYYMMDD = (date) => {
 }
 
 export default function GastosPage() {
-  const { transactions, loading, startDate, endDate, setDateRange } = useTransactions();
+  const { 
+    transactions, 
+    loading, 
+    startDate, 
+    endDate, 
+    setDateRange, 
+    categories,
+    selectedCategoryIds,
+    toggleCategoryFilter 
+  } = useTransactions();
 
   const spendingData = useMemo(() => {
     if (!transactions) return [];
@@ -57,7 +67,15 @@ export default function GastosPage() {
       <Header title="Análise de Gastos" />
       
       {/* Seção de Filtros */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card>
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Filtrar por Categoria</h3>
+          <CategoryFilter 
+            allCategories={categories}
+            selectedIds={selectedCategoryIds}
+            onToggleCategory={toggleCategoryFilter}
+          />
+        </Card>
         <Card>
             <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Filtrar por Data</h3>
             <div className="flex items-center space-x-2">

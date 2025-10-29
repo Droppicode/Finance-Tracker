@@ -35,4 +35,4 @@ class TransactionSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ('theme', 'start_date', 'end_date')
+        fields = ('theme', 'start_date', 'end_date', 'filtered_categories')
