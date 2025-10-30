@@ -188,16 +188,48 @@ export default function InvestimentosPage() {
         {/* Coluna de Detalhes do Ativo */}
         {assetQuote && (
           <div className="lg:col-span-1">
-            <Card>
-              <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Detalhes do Ativo</h2>
-              <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                <p><strong>Variação Diária:</strong> <span className={parseFloat(assetQuote.change) >= 0 ? 'text-green-600' : 'text-red-600'}>{!isNaN(parseFloat(assetQuote.change)) ? parseFloat(assetQuote.change).toFixed(2) : 'N/A'} ({!isNaN(parseFloat(assetQuote.percent_change)) ? parseFloat(assetQuote.percent_change).toFixed(2) : 'N/A'}%)</span></p>
-                <p><strong>Máxima 52 Semanas:</strong> {assetQuote.fifty_two_week.high?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                <p><strong>Mínima 52 Semanas:</strong> {assetQuote.fifty_two_week.low?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                <p><strong>Abertura:</strong> {assetQuote.open?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                <p><strong>Máxima do Dia:</strong> {assetQuote.high?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                <p><strong>Mínima do Dia:</strong> {assetQuote.low?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                <p><strong>Volume:</strong> {assetQuote.volume?.toLocaleString('pt-BR')}</p>
+            <Card className="p-6 rounded-lg border border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 border-b border-gray-700 pb-3 mb-4">Detalhes do Ativo</h2>
+              
+              {/* Destaque Principal: Variação Diária */}
+              <div className="mb-4">
+                <p className="text-sm text-gray-400">Variação Diária</p>
+                <p className={`text-2xl font-bold ${parseFloat(assetQuote.change) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {!isNaN(parseFloat(assetQuote.change)) ? parseFloat(assetQuote.change).toFixed(2) : 'N/A'} ({!isNaN(parseFloat(assetQuote.percent_change)) ? parseFloat(assetQuote.percent_change).toFixed(2) : 'N/A'}%) 
+                </p>
+              </div>
+
+              {/* Agrupamento 1: Desempenho do Dia */}
+              <div className="mt-5">
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Desempenho do Dia</h3>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                  <p className="text-gray-400 text-sm">Abertura:</p>
+                  <p className="text-gray-100 font-medium text-sm">{assetQuote.open?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+
+                  <p className="text-gray-400 text-sm">Máxima do Dia:</p>
+                  <p className="text-gray-100 font-medium text-sm">{assetQuote.high?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+
+                  <p className="text-gray-400 text-sm">Mínima do Dia:</p>
+                  <p className="text-gray-100 font-medium text-sm">{assetQuote.low?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+
+                  <p className="text-gray-400 text-sm">Fechamento Anterior:</p>
+                  <p className="text-gray-100 font-medium text-sm">{assetQuote.close?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+
+                  <p className="text-gray-400 text-sm">Volume:</p>
+                  <p className="text-gray-100 font-medium text-sm">{assetQuote.volume?.toLocaleString('pt-BR')}</p>
+                </div>
+              </div>
+
+              {/* Agrupamento 2: Período de 52 Semanas */}
+              <div className="mt-5">
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Período de 52 Semanas</h3>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                  <p className="text-gray-400 text-sm">Máxima 52 Semanas:</p>
+                  <p className="text-gray-100 font-medium text-sm">{assetQuote.fifty_two_week.high?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+
+                  <p className="text-gray-400 text-sm">Mínima 52 Semanas:</p>
+                  <p className="text-gray-100 font-medium text-sm">{assetQuote.fifty_two_week.low?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                </div>
               </div>
             </Card>
           </div>
