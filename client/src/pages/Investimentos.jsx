@@ -189,7 +189,7 @@ export default function InvestimentosPage() {
         {assetQuote && (
           <div className="lg:col-span-1">
             <Card className="p-6 rounded-lg border border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Detalhes do Ativo</h2>
+              <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 border-b border-gray-700 pb-3 mb-4">Detalhes do Ativo</h2>
               
               {/* Destaque Principal: Variação Diária */}
               <div className="mb-4">
@@ -204,19 +204,19 @@ export default function InvestimentosPage() {
                 <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Desempenho do Dia</h3>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                   <p className="text-gray-400 text-sm">Abertura:</p>
-                  <p className="text-gray-100 font-medium text-sm">{assetQuote.open?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                  <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.open?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
 
                   <p className="text-gray-400 text-sm">Máxima do Dia:</p>
-                  <p className="text-gray-100 font-medium text-sm">{assetQuote.high?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                  <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.high?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
 
                   <p className="text-gray-400 text-sm">Mínima do Dia:</p>
-                  <p className="text-gray-100 font-medium text-sm">{assetQuote.low?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                  <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.low?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
 
                   <p className="text-gray-400 text-sm">Fechamento Anterior:</p>
-                  <p className="text-gray-100 font-medium text-sm">{assetQuote.close?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                  <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.close?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
 
                   <p className="text-gray-400 text-sm">Volume:</p>
-                  <p className="text-gray-100 font-medium text-sm">{assetQuote.volume?.toLocaleString('pt-BR')}</p>
+                  <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.volume?.toLocaleString('pt-BR')}</p>
                 </div>
               </div>
 
@@ -225,10 +225,10 @@ export default function InvestimentosPage() {
                 <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Período de 52 Semanas</h3>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                   <p className="text-gray-400 text-sm">Máxima 52 Semanas:</p>
-                  <p className="text-gray-100 font-medium text-sm">{assetQuote.fifty_two_week.high?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                  <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.fifty_two_week.high?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
 
                   <p className="text-gray-400 text-sm">Mínima 52 Semanas:</p>
-                  <p className="text-gray-100 font-medium text-sm">{assetQuote.fifty_two_week.low?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                  <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.fifty_two_week.low?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                 </div>
               </div>
             </Card>
