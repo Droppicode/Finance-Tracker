@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { TransactionProvider } from './context/TransactionContext';
 import { InvestmentProvider } from './context/InvestmentContext';
+import { UtilsProvider } from './context/UtilsContext';
 import { getProfile, updateProfile } from './api/profile';
 import DashboardPage from './pages/Dashboard';
 import GastosPage from './pages/Gastos';
@@ -104,11 +105,13 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <TransactionProvider>
-          <InvestmentProvider>
-            <AppRoutes />
-          </InvestmentProvider>
-        </TransactionProvider>
+        <UtilsProvider>
+          <TransactionProvider>
+            <InvestmentProvider>
+              <AppRoutes />
+            </InvestmentProvider>
+          </TransactionProvider>
+        </UtilsProvider>
       </AuthProvider>
     </BrowserRouter>
   );

@@ -2,7 +2,9 @@ import { useMemo } from 'react';
 import Header from '../components/Header';
 import Card from '../components/Card';
 import { useTransactions } from '../context/TransactionContext';
+import { useUtils } from '../context/UtilsContext';
 import CategoryFilter from '../components/CategoryFilter';
+import DateRangePicker from '../components/DateRangePicker';
 
 // Importando componentes de gráficos da biblioteca recharts
 import {
@@ -25,13 +27,12 @@ export default function GastosPage() {
   const { 
     transactions, 
     loading, 
-    startDate, 
-    endDate, 
-    setDateRange, 
     categories,
     selectedCategoryIds,
     toggleCategoryFilter 
   } = useTransactions();
+
+  const { startDate, endDate, updateDates } = useUtils();
 
   const spendingData = useMemo(() => {
     if (!transactions) return [];
@@ -78,21 +79,12 @@ export default function GastosPage() {
         </Card>
         <Card>
             <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Filtrar por Data</h3>
-            <div className="flex items-center space-x-2">
-                <input 
-                    type="date" 
-                    value={toYYYYMMDD(startDate)}
-                    onChange={(e) => setDateRange(new Date(e.target.value), endDate)}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                />
-                <span className="text-gray-500">até</span>
-                <input 
-                    type="date" 
-                    value={toYYYYMMDD(endDate)}
-                    onChange={(e) => setDateRange(startDate, new Date(e.target.value))}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                />
-            </div>
+            <DateRangePicker
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={(newStartDate) => updateDates(newStartDate, endDate)}
+              onEndDateChange={(newEndDate) => updateDates(startDate, newEndDate)}
+            />
         </Card>
         <Card className="bg-blue-600 text-white">
           <h3 className="text-sm font-medium text-blue-200">Total Gasto (Período)</h3>

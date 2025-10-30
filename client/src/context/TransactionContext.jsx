@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useContext, useMemo } from 'react';
 import { AuthContext } from './AuthContext';
+import { useUtils } from './UtilsContext';
 import { getTransactions, updateTransaction, deleteTransaction } from '../api/transactions';
 import { getCategories, createCategory, deleteCategory } from '../api/categories';
 import { processStatement } from '../api/statement';
@@ -11,27 +12,22 @@ export const useTransactions = () => {
   return useContext(TransactionContext);
 };
 
-const toYYYYMMDD = (date) => {
-  if (!date) return '';
-  const tempDate = new Date(date.valueOf() - date.getTimezoneOffset() * 60000);
-  return tempDate.toISOString().split('T')[0];
-}
-
 export const TransactionProvider = ({ children }) => {
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [endDate, setEndDate] = useState(new Date());
-  const [startDate, setStartDate] = useState(() => {
-    const date = new Date();
-    date.setDate(date.getDate() - 30);
-    return date;
-  });
   const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
 
   const { isAuthenticated } = useContext(AuthContext);
+  const { startDate, endDate, updateDates, loading: utilsLoading } = useUtils();
+
+  const toYYYYMMDD = (date) => {
+    if (!date) return '';
+    const tempDate = new Date(date.valueOf() - date.getTimezoneOffset() * 60000);
+    return tempDate.toISOString().split('T')[0];
+  }
 
   useEffect(() => {
     const loadData = async () => {
@@ -46,11 +42,7 @@ export const TransactionProvider = ({ children }) => {
         setTransactions(transactionsRes.data);
         setCategories(categoriesRes.data);
 
-        const { start_date, end_date, filtered_categories } = profileRes.data;
-        if (start_date && end_date) {
-          setStartDate(new Date(start_date));
-          setEndDate(new Date(end_date));
-        }
+        const { filtered_categories } = profileRes.data;
         if (filtered_categories) {
           setSelectedCategoryIds(filtered_categories);
         }
@@ -64,23 +56,21 @@ export const TransactionProvider = ({ children }) => {
       }
     };
 
-    if (isAuthenticated) {
+    if (isAuthenticated && !utilsLoading) {
       loadData();
-    } else {
+    } else if (!isAuthenticated) {
       setTransactions([]);
       setCategories([]);
       setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, utilsLoading]);
 
   // Debounced effect to save preferences to profile
   useEffect(() => {
-    if (!isAuthenticated || loading) return;
+    if (!isAuthenticated || loading || utilsLoading) return;
 
     const handler = setTimeout(() => {
       updateProfile({ 
-        start_date: toYYYYMMDD(startDate),
-        end_date: toYYYYMMDD(endDate),
         filtered_categories: selectedCategoryIds,
       }).catch(err => console.error("Failed to save preferences:", err));
     }, 1000);
@@ -88,9 +78,11 @@ export const TransactionProvider = ({ children }) => {
     return () => {
       clearTimeout(handler);
     };
-  }, [startDate, endDate, selectedCategoryIds, isAuthenticated, loading]);
+  }, [selectedCategoryIds, isAuthenticated, loading, utilsLoading]);
 
   const filteredTransactions = useMemo(() => {
+    if (!startDate || !endDate) return [];
+
     const start = toYYYYMMDD(startDate);
     const end = toYYYYMMDD(endDate);
 
@@ -108,8 +100,7 @@ export const TransactionProvider = ({ children }) => {
   }, [transactions, startDate, endDate, selectedCategoryIds]);
 
   const setDateRange = (start, end) => {
-    setStartDate(start);
-    setEndDate(end);
+    updateDates(start, end);
   }
 
   const toggleCategoryFilter = (categoryId) => {

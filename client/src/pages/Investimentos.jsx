@@ -5,14 +5,16 @@ import Button from '../components/Button';
 import Select from '../components/Select';
 import Input from '../components/Input';
 import InvestmentSearchPopover from '../components/InvestmentSearchPopover';
+import InvestmentTypeFilter from '../components/InvestmentTypeFilter'; // New import
+import DateRangePicker from '../components/DateRangePicker';
 import { Plus } from 'lucide-react';
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { useInvestments } from '../context/InvestmentContext';
+import { useUtils } from '../context/UtilsContext';
 import axiosInstance from '../api/axios';
 
-// Mapeamento canônico de tipos exibidos
 const investmentOptions = [
   { value: 'stock', label: 'Ações' },
   { value: 'fund', label: 'FIIs' },
@@ -31,6 +33,7 @@ const COLORS_INVESTMENTS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 export default function InvestimentosPage() {
   const { investments, addInvestment, removeInvestment, loading } = useInvestments();
+  const { startDate, endDate, updateDates } = useUtils();
   const [assetName, setAssetName] = useState("");
   const [assetQuantity, setAssetQuantity] = useState("");
   const [assetPrice, setAssetPrice] = useState(null);
@@ -39,6 +42,11 @@ export default function InvestimentosPage() {
   const [assetType, setAssetType] = useState("");
   const [showSearchPopover, setShowSearchPopover] = useState(false);
   const searchPopoverRef = useRef(null);
+
+  // New states for grouping and filtering
+  const [groupByAsset, setGroupByAsset] = useState(false);
+  const [filterType, setFilterType] = useState([]); // Changed to array
+  const [triggerFilter, setTriggerFilter] = useState(0); // Used to manually trigger filter re-evaluation
 
   // Busca preço (cotação) pelo backend, autenticado
   const handleSelectInvestment = async (investment) => {
@@ -98,23 +106,86 @@ export default function InvestimentosPage() {
     return investments.reduce((acc, { quantity, price }) => acc + (parseFloat(quantity) * parseFloat(price)), 0);
   }, [investments]);
 
+  // Processed investments for display (filtering and grouping)
+  const processedInvestments = useMemo(() => {
+    let filtered = investments;
+
+    // Apply type filter
+    if (filterType.length > 0) { // Modified for array check
+      filtered = filtered.filter(inv => filterType.includes(inv.type));
+    }
+
+    // Apply date filter
+    if (startDate) {
+      const start = new Date(startDate);
+      filtered = filtered.filter(inv => new Date(inv.purchase_date) >= start);
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      filtered = filtered.filter(inv => new Date(inv.purchase_date) <= end);
+    }
+
+    // Apply grouping
+    if (groupByAsset) {
+      const groupedMap = {};
+      filtered.forEach(inv => {
+        // Use symbol as the key for grouping
+        if (!groupedMap[inv.symbol]) {
+          groupedMap[inv.symbol] = {
+            ...inv,
+            quantity: 0,
+            totalValue: 0,
+            // Store original IDs for potential removal if ungrouped
+            originalIds: [],
+            // Keep the first purchase_date for display, or adjust as needed
+            purchase_date: inv.purchase_date,
+          };
+        }
+        groupedMap[inv.symbol].quantity += parseFloat(inv.quantity);
+        groupedMap[inv.symbol].totalValue += parseFloat(inv.quantity) * parseFloat(inv.price);
+        groupedMap[inv.symbol].originalIds.push(inv.id);
+      });
+
+      return Object.values(groupedMap).map(groupedInv => ({
+        ...groupedInv,
+        price: groupedInv.totalValue / groupedInv.quantity, // Weighted average price
+        // For grouped items, the ID should be unique, or handle removal differently
+        id: groupedInv.symbol, // Using symbol as a temporary ID for grouped items
+      }));
+    }
+
+    return filtered;
+  }, [investments, groupByAsset, filterType, startDate, endDate, triggerFilter]);
+
   // Dados para gráfico - agrupa por type salvo
   const chartData = useMemo(() => {
     const map = {};
-    investments.forEach(inv => {
+    processedInvestments.forEach(inv => {
       const t = inv.type || 'outros';
       map[t] = (map[t] || 0) + (parseFloat(inv.quantity) * parseFloat(inv.price));
     });
     return Object.entries(map).map(([type, value]) => ({ name: labelFromType(type), value }));
-  }, [investments]);
+  }, [processedInvestments]);
+
+
+  const handleApplyFilters = () => {
+    setTriggerFilter(prev => prev + 1);
+  };
+
+  const handleClearFilters = () => {
+    setFilterType([]); // Reset to empty array
+    updateDates(null, null);
+    setGroupByAsset(false);
+    setTriggerFilter(prev => prev + 1);
+  };
 
   return (
     <div>
       <Header title="Carteira de Investimentos" />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Coluna do Formulário */}
-        <div className="lg:col-span-1">
-          <Card>
+        <div className="lg:col-span-1 flex flex-col">
+          <Card className="flex-grow">
             <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Adicionar Investimento</h2>
             <form onSubmit={handleAddInvestment} className="space-y-4">
               <div className="relative">
@@ -176,8 +247,8 @@ export default function InvestimentosPage() {
         </div>
         {/* Coluna de Detalhes do Ativo */}
         {assetQuote && (
-          <div className="lg:col-span-1">
-            <Card className="p-6 rounded-lg border border-gray-700">
+          <div className="lg:col-span-1 flex flex-col">
+            <Card className="p-6 rounded-lg border border-gray-700 flex-grow">
               <div className="flex items-center mb-4">
                 {assetQuote.logourl && (
                   <img src={assetQuote.logourl} alt={`${assetQuote.symbol} logo`} className="w-10 h-10 mr-3" />
@@ -210,8 +281,9 @@ export default function InvestimentosPage() {
                   <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.regularMarketDayLow?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                   <p className="text-gray-400 text-sm">Fechamento Anterior:</p>
                   <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.regularMarketPreviousClose?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                  <p className="text-gray-400 text-sm">Volume:</p>
-                  <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.regularMarketVolume?.toLocaleString('pt-BR')}</p>
+                  <p className="text-gray-400 text-sm">Volume:
+                  </p><p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.regularMarketVolume?.toLocaleString('pt-BR')}
+                  </p>
                 </div>
               </div>
 
@@ -257,8 +329,8 @@ export default function InvestimentosPage() {
           </div>
         )}
         {/* Coluna do Gráfico */}
-        <div className="lg:col-span-1">
-          <Card>
+        <div className="lg:col-span-1 flex flex-col">
+          <Card className="flex-grow">
             <div className="flex justify-between items-center mb-2">
               <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Alocação da Carteira</h2>
               <div className="text-right">
@@ -297,37 +369,66 @@ export default function InvestimentosPage() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            {/* Listagem dos investimentos salvos */}
-            <div className="mt-8">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Investimentos Salvos</h3>
-              {loading ? (
-                <p className="text-gray-500 dark:text-gray-400">Carregando...</p>
-              ) : investments.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400">Nenhum investimento salvo ainda.</p>
-              ) : (
-                <ul>
-                  {investments.map(inv => (
-                    <li key={inv.id} className="flex justify-between items-center border-b border-gray-200 dark:border-gray-600 py-2">
-                      <div>
-                        <span className="font-bold text-gray-700 dark:text-gray-100">{inv.symbol}</span>{' '}
-                        <span className="text-gray-600 dark:text-gray-400">{inv.name}</span>
-                        <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">({inv.quantity} x {parseFloat(inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})</span>
-                        {inv.type && (
-                          <span className="ml-2 text-xs px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">{labelFromType(inv.type)}</span>
-                        )}
-                      </div>
-                      <Button
-                        variant="danger"
-                        onClick={() => removeInvestment(inv.id)}
-                        size="sm"
-                      >Excluir</Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+
           </Card>
         </div>
+      </div>
+
+      {/* Investimentos Salvos - Nova Seção */}
+      <div className="mt-6">
+        <Card>
+          <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Investimentos Salvos</h3>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="groupByAsset"
+                  checked={groupByAsset}
+                  onChange={(e) => setGroupByAsset(e.target.checked)}
+                  className="form-checkbox h-4 w-4 text-blue-600"
+                />
+                <label htmlFor="groupByAsset" className="text-gray-700 dark:text-gray-300">Agrupar por Ativo</label>
+              </div>
+              <InvestmentTypeFilter
+                options={investmentOptions}
+                selectedTypes={filterType}
+                onChange={setFilterType}
+              />
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={(newStartDate) => updateDates(newStartDate, endDate)}
+                onEndDateChange={(newEndDate) => updateDates(startDate, newEndDate)}
+              />
+            </div>
+          </div>
+          {loading ? (
+            <p className="text-gray-500 dark:text-gray-400">Carregando...</p>
+          ) : processedInvestments.length === 0 ? (
+            <p className="text-gray-500 dark:text-gray-400">Nenhum investimento salvo ainda.</p>
+          ) : (
+            <ul>
+              {processedInvestments.map(inv => (
+                <li key={inv.id} className="flex justify-between items-center border-b border-gray-200 dark:border-gray-600 py-2">
+                  <div>
+                    <span className="font-bold text-gray-700 dark:text-gray-100">{inv.symbol}</span>{' '}
+                    <span className="text-gray-600 dark:text-gray-400">{inv.name}</span>
+                    <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">({inv.quantity} x {parseFloat(inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})</span>
+                    {inv.type && (
+                      <span className="ml-2 text-xs px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">{labelFromType(inv.type)}</span>
+                    )}
+                  </div>
+                  <Button
+                    variant="danger"
+                    onClick={() => removeInvestment(inv.id)}
+                    size="sm"
+                  >Excluir</Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
       </div>
     </div>
   );
