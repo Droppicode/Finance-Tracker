@@ -122,3 +122,19 @@ class InvestmentSearchView(APIView):
         except Exception as e:
             logging.exception("Error searching investment symbol")
             return Response({'error': 'Erro ao buscar símbolo de investimento.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class InvestmentQuoteView(APIView):
+    def get(self, request, *args, **kwargs):
+        symbol = request.query_params.get('symbol')
+        if not symbol:
+            return Response({'error': 'Parâmetro "symbol" é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            results = twelvedata_api.get_quote(symbol)
+            return Response(results, status=status.HTTP_200_OK)
+        except ValueError as e:
+            logging.exception("Value Error processing statement")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            logging.exception("Error getting investment quote")
+            return Response({'error': 'Erro ao buscar cotação do investimento.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

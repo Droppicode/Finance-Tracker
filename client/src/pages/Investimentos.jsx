@@ -1,11 +1,12 @@
 import { useState, useMemo, useRef } from 'react';
+import axiosInstance from '../api/axios';
 
 import Header from '../components/Header';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Select from '../components/Select';
 import Input from '../components/Input';
-import InvestmentSearchPopover from '../components/InvestmentSearchPopover'; 
+import InvestmentSearchPopover from '../components/InvestmentSearchPopover';
 
 // Importando ícones da biblioteca lucide-react
 import {
@@ -39,35 +40,54 @@ export default function InvestimentosPage() {
 
   const [investments, setInvestments] = useState(mockInvestmentData);
   const [assetName, setAssetName] = useState('');
-  const [assetValue, setAssetValue] = useState('');
+  const [assetQuantity, setAssetQuantity] = useState('');
+  const [assetPrice, setAssetPrice] = useState(null);
+  const [assetQuote, setAssetQuote] = useState(null); // New state for full quote object
+  const [isPriceLoading, setIsPriceLoading] = useState(false);
   const [assetType, setAssetType] = useState('');
 
   const [showSearchPopover, setShowSearchPopover] = useState(false);
   const searchPopoverRef = useRef(null); // Ref to hold the handleSearch function from popover
 
   const investmentOptions = [
-    { value: 'rf', label: 'Renda Fixa (RF)' },
-    { value: 'fii', label: 'Fundos Imobiliários (FII)' },
-    { value: 'acoes_br', label: 'Ações (BR)' },
-    { value: 'acoes_eua', label: 'Ações (EUA)' },
-    { value: 'crypto', label: 'Criptomoedas' },
+    { value: 'stock', label: 'Ações (Stocks)' },
+    { value: 'forex', label: 'Forex (Câmbio)' },
+    { value: 'crypto', label: 'Criptomoedas (Cryptocurrencies)' },
+    { value: 'etf', label: 'ETFs (Fundos de Índice)' },
+    { value: 'fund', label: 'Fundos (Mutual Funds)' },
+    { value: 'index', label: 'Índices (Indices)' },
+    { value: 'commodity', label: 'Commodities' },
+    { value: 'fixed_income', label: 'Renda Fixa (Fixed Income)' }
   ];
 
-  const handleSelectInvestment = (investment) => {
+  const handleSelectInvestment = async (investment) => {
     setAssetName(`${investment.symbol} - ${investment.instrument_name}`);
-    // Optionally, try to pre-fill assetType based on investment.type or other data
-    // For now, we'll leave assetType for manual selection or more complex logic
     setShowSearchPopover(false);
+    setIsPriceLoading(true);
+    setAssetPrice(null);
+    setAssetQuote(null); // Reset assetQuote when a new search is initiated
+    try {
+      const response = await axiosInstance.get(`/api/investments/quote/?symbol=${investment.symbol}`);
+      setAssetPrice(response.data.close);
+      setAssetQuote(response.data); // Store the full quote object
+    } catch (error) {
+      console.error("Erro ao buscar cotação do ativo:", error);
+      // Optionally, show an error message to the user
+    } finally {
+      setIsPriceLoading(false);
+    }
   };
 
   const handleAddInvestment = (e) => {
     e.preventDefault();
-    const newValue = parseFloat(assetValue);
-    if (!assetName || !newValue || !assetType) {
+    const quantity = parseFloat(assetQuantity);
+    if (!assetName || !quantity || !assetType || assetPrice === null) {
       // (Em um app real, mostraria um erro)
-      console.log("Formulário incompleto");
+      console.log("Formulário incompleto ou preço não carregado");
       return;
     }
+
+    const newValue = quantity * parseFloat(assetPrice);
 
     const typeLabel = investmentOptions.find(opt => opt.value === assetType)?.label || 'Outros';
 
@@ -84,7 +104,8 @@ export default function InvestimentosPage() {
 
     // Limpa o formulário
     setAssetName('');
-    setAssetValue('');
+    setAssetQuantity('');
+    setAssetPrice(null);
     setAssetType('');
   };
 
@@ -110,6 +131,7 @@ export default function InvestimentosPage() {
                   onChange={(e) => {
                     setAssetName(e.target.value);
                     setShowSearchPopover(true); // Show popover on change
+                    setAssetQuote(null); // Clear assetQuote when input changes
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -129,13 +151,22 @@ export default function InvestimentosPage() {
                   />
                 )}
               </div>
+
+              {isPriceLoading && <p className="text-sm text-gray-500 dark:text-gray-400">Carregando preço...</p>}
+              {assetPrice !== null && (
+                <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-md">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">Preço por unidade: <span className="font-bold text-gray-800 dark:text-gray-100">{parseFloat(assetPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></p>
+                </div>
+              )}
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valor Investido (R$)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantidade</label>
                 <Input
                   type="number"
-                  placeholder="1000.00"
-                  value={assetValue}
-                  onChange={(e) => setAssetValue(e.target.value)}
+                  placeholder="100"
+                  value={assetQuantity}
+                  onChange={(e) => setAssetQuantity(e.target.value)}
+                  disabled={assetPrice === null} // Disable if price is not loaded
                 />
               </div>
               <div>
@@ -153,6 +184,24 @@ export default function InvestimentosPage() {
             </form>
           </Card>
         </div>
+
+        {/* Coluna de Detalhes do Ativo */}
+        {assetQuote && (
+          <div className="lg:col-span-1">
+            <Card>
+              <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Detalhes do Ativo</h2>
+              <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                <p><strong>Variação Diária:</strong> <span className={parseFloat(assetQuote.change) >= 0 ? 'text-green-600' : 'text-red-600'}>{!isNaN(parseFloat(assetQuote.change)) ? parseFloat(assetQuote.change).toFixed(2) : 'N/A'} ({!isNaN(parseFloat(assetQuote.percent_change)) ? parseFloat(assetQuote.percent_change).toFixed(2) : 'N/A'}%)</span></p>
+                <p><strong>Máxima 52 Semanas:</strong> {assetQuote.fifty_two_week.high?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                <p><strong>Mínima 52 Semanas:</strong> {assetQuote.fifty_two_week.low?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                <p><strong>Abertura:</strong> {assetQuote.open?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                <p><strong>Máxima do Dia:</strong> {assetQuote.high?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                <p><strong>Mínima do Dia:</strong> {assetQuote.low?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                <p><strong>Volume:</strong> {assetQuote.volume?.toLocaleString('pt-BR')}</p>
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* Coluna do Gráfico */}
         <div className="lg:col-span-1">
