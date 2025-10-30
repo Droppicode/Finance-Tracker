@@ -10,6 +10,8 @@ from .models import Transaction, Category, UserProfile
 from .serializers import TransactionSerializer, CategorySerializer, UserProfileSerializer
 import os
 import logging
+import requests
+from django.http import HttpResponse
 
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
@@ -138,3 +140,27 @@ class InvestmentQuoteView(APIView):
         except Exception as e:
             logging.exception("Error getting investment quote")
             return Response({'error': 'Erro ao buscar cotação do investimento.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ProfilePictureProxyView(APIView):
+    def get(self, request, *args, **kwargs):
+        image_url = request.query_params.get('url')
+        if not image_url:
+            return Response({'error': 'URL da imagem não fornecida.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            response = requests.get(image_url, stream=True)
+            response.raise_for_status()  # Raise an exception for HTTP errors
+
+            content_type = response.headers.get('Content-Type', 'application/octet-stream')
+            
+            # Ensure CORS headers are set for the proxied image
+            http_response = HttpResponse(response.iter_content(chunk_size=8192), content_type=content_type)
+            http_response['Access-Control-Allow-Origin'] = '*' # Or specific origins
+            return http_response
+
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error fetching image from {image_url}: {e}")
+            return Response({'error': f'Erro ao buscar imagem: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            logging.error(f"Unexpected error in ProfilePictureProxyView: {e}")
+            return Response({'error': f'Erro interno do servidor: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

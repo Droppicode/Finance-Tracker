@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from dj_rest_auth.serializers import UserDetailsSerializer
 from .models import Transaction, Category, UserProfile
+from django.urls import reverse
 
 class CustomUserDetailsSerializer(UserDetailsSerializer):
     profile_picture = serializers.SerializerMethodField()
@@ -10,9 +11,14 @@ class CustomUserDetailsSerializer(UserDetailsSerializer):
 
     def get_profile_picture(self, obj):
         try:
-            # Assumes the user has a social account and it has extra_data with a picture
             social_account = obj.socialaccount_set.get(provider='google')
-            return social_account.extra_data.get('picture')
+            picture_url = social_account.extra_data.get('picture')
+            if picture_url:
+                # Construct the URL to the proxy view
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(reverse('profile_picture_proxy') + f'?url={picture_url}')
+            return None
         except Exception:
             return None
 
