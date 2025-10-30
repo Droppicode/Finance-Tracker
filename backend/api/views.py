@@ -6,8 +6,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status, viewsets
 from . import services
-from .models import Transaction, Category, UserProfile
-from .serializers import TransactionSerializer, CategorySerializer, UserProfileSerializer
+from .models import Transaction, Category, UserProfile, Investment
+from .serializers import TransactionSerializer, CategorySerializer, UserProfileSerializer, InvestmentSerializer
 import os
 import logging
 import requests
@@ -106,8 +106,7 @@ class UserProfileView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-from . import twelvedata_api
+from . import brapi_api
 
 class InvestmentSearchView(APIView):
     def get(self, request, *args, **kwargs):
@@ -116,8 +115,8 @@ class InvestmentSearchView(APIView):
             return Response({'error': 'Parâmetro "symbol" é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            results = twelvedata_api.search_symbol(symbol)
-            return Response(results, status=status.HTTP_200_OK)
+            results = brapi_api.search_symbol(symbol)
+            return Response(results.get('stocks', []), status=status.HTTP_200_OK)
         except ValueError as e:
             logging.exception("Value Error processing statement")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -132,14 +131,24 @@ class InvestmentQuoteView(APIView):
             return Response({'error': 'Parâmetro "symbol" é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            results = twelvedata_api.get_quote(symbol)
-            return Response(results, status=status.HTTP_200_OK)
+            results = brapi_api.get_quote(symbol)
+            return Response(results.get('results', [{}])[0], status=status.HTTP_200_OK)
         except ValueError as e:
             logging.exception("Value Error processing statement")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
             logging.exception("Error getting investment quote")
             return Response({'error': 'Erro ao buscar cotação do investimento.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class InvestmentViewSet(viewsets.ModelViewSet):
+    serializer_class = InvestmentSerializer
+    queryset = Investment.objects.all()
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 class ProfilePictureProxyView(APIView):
     def get(self, request, *args, **kwargs):

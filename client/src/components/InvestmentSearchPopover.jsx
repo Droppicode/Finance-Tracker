@@ -32,8 +32,9 @@ const InvestmentSearchPopover = ({ searchTerm, onSearchSubmit, onSelectInvestmen
     setSearchError(null);
     try {
       const response = await axiosInstance.get(`/api/investments/search/?symbol=${searchTerm}`);
+      console.log("Investments List; ", response.data)
       setLastSearchTerm(searchTerm);
-      setSearchResults(response.data.data || []);
+      setSearchResults(response.data || []);
     } catch (err) {
       console.error("Erro ao buscar investimentos:", err);
       setSearchError("Erro ao buscar investimentos. Tente novamente.");
@@ -70,13 +71,13 @@ const InvestmentSearchPopover = ({ searchTerm, onSearchSubmit, onSelectInvestmen
           <ul className="divide-y divide-gray-200 dark:divide-gray-700">
             {searchResults.map((result) => (
               <li
-                key={result.symbol + ':' + result.mic_code}
+                key={result.stock}
                 className="py-2 flex justify-between items-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md px-2"
                 onClick={() => handleSelect(result)}
               >
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-gray-100">{result.symbol} - {result.instrument_name}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{result.exchange} ({result.country})</p>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">{result.stock} - {result.name}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{result.sector} ({result.type})</p>
                 </div>
               </li>
             ))}

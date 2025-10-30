@@ -22,12 +22,13 @@ from api import views
 router = DefaultRouter()
 router.register(r'transactions', views.TransactionViewSet, basename='transaction')
 router.register(r'categories', views.CategoryViewSet, basename='category')
+router.register(r'investments', views.InvestmentViewSet, basename='investment')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/process-statement/', views.ProcessStatementView.as_view(), name='process_statement'),
     path('api/profile/', views.UserProfileView.as_view(), name='user_profile'),
-    path('api/profile-picture-proxy/', views.ProfilePictureProxyView.as_view(), name='profile_picture_proxy'), # New URL pattern
+    path('api/profile-picture-proxy/', views.ProfilePictureProxyView.as_view(), name='profile_picture_proxy'),
     path('api/investments/search/', views.InvestmentSearchView.as_view(), name='investment_search'),
     path('api/investments/quote/', views.InvestmentQuoteView.as_view(), name='investment_quote'),
     path('api/', include(router.urls)),

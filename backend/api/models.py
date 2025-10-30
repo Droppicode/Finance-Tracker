@@ -31,3 +31,24 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
+    
+# Investment model
+class Investment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    symbol = models.CharField(max_length=20)
+    quantity = models.DecimalField(max_digits=20, decimal_places=5)
+    price = models.DecimalField(max_digits=20, decimal_places=5)
+    currency = models.CharField(max_length=10, default="USD")
+    purchase_date = models.DateField(null=True, blank=True)
+    notes = models.TextField(null=True, blank=True)
+    type = models.CharField(max_length=32, blank=True, default="")
+
+    class Meta:
+        unique_together = ("user", "symbol", "purchase_date")
+
+    def __str__(self):
+        return f"{self.symbol} ({self.quantity}) @ {self.price}"
+
+    
+        type = models.CharField(max_length=32, blank=True, default="")

@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { TransactionProvider } from './context/TransactionContext';
+import { InvestmentProvider } from './context/InvestmentContext';
 import { getProfile, updateProfile } from './api/profile';
 import DashboardPage from './pages/Dashboard';
 import GastosPage from './pages/Gastos';
@@ -104,7 +105,9 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <TransactionProvider>
-          <AppRoutes />
+          <InvestmentProvider>
+            <AppRoutes />
+          </InvestmentProvider>
         </TransactionProvider>
       </AuthProvider>
     </BrowserRouter>
