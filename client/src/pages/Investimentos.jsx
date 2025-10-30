@@ -189,7 +189,7 @@ export default function InvestimentosPage() {
         {assetQuote && (
           <div className="lg:col-span-1">
             <Card className="p-6 rounded-lg border border-gray-700">
-              <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 border-b border-gray-700 pb-3 mb-4">Detalhes do Ativo</h2>
+              <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Detalhes do Ativo</h2>
               
               {/* Destaque Principal: Variação Diária */}
               <div className="mb-4">
