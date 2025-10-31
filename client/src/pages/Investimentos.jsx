@@ -7,7 +7,8 @@ import Input from '../components/Input';
 import InvestmentSearchPopover from '../components/InvestmentSearchPopover';
 import InvestmentTypeFilter from '../components/InvestmentTypeFilter'; // New import
 import DateRangePicker from '../components/DateRangePicker';
-import { Plus, X, Trash2 } from 'lucide-react';
+import { Plus, X, Trash2, ChevronDown } from 'lucide-react';
+import ToggleSwitch from '../components/ToggleSwitch';
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
@@ -46,6 +47,7 @@ export default function InvestimentosPage() {
   // New states for grouping and filtering
   const [groupByAsset, setGroupByAsset] = useState(false);
   const [filterType, setFilterType] = useState([]); // Changed to array
+  const [expandedGroups, setExpandedGroups] = useState([]);
 
   // Busca preço (cotação) pelo backend, autenticado
   const handleSelectInvestment = async (investment) => {
@@ -166,6 +168,14 @@ export default function InvestimentosPage() {
     return Object.entries(map).map(([type, value]) => ({ name: labelFromType(type), value }));
   }, [processedInvestments]);
 
+  const toggleGroup = (symbol) => {
+    setExpandedGroups(prev =>
+      prev.includes(symbol)
+        ? prev.filter(s => s !== symbol)
+        : [...prev, symbol]
+    );
+  };
+
   return (
     <div>
       <Header title="Carteira de Investimentos" />
@@ -183,7 +193,6 @@ export default function InvestimentosPage() {
                   onChange={(e) => {
                     setAssetName(e.target.value);
                     setShowSearchPopover(true);
-                    setAssetQuote(null);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && searchPopoverRef.current) {
@@ -348,10 +357,7 @@ export default function InvestimentosPage() {
                   </Pie>
                   <Tooltip
                     formatter={(value) =>
-                      value.toLocaleString('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL',
-                      })
+                      value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
                     }
                   />
                   <Legend wrapperStyle={{ color: 'var(--legend-text, #374151)' }} className="dark:[--legend-text:#d1d5db]" />
@@ -369,16 +375,11 @@ export default function InvestimentosPage() {
           <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Investimentos Salvos</h3>
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="groupByAsset"
-                  checked={groupByAsset}
-                  onChange={(e) => setGroupByAsset(e.target.checked)}
-                  className="form-checkbox h-4 w-4 text-blue-600"
-                />
-                <label htmlFor="groupByAsset" className="text-gray-700 dark:text-gray-300">Agrupar por Ativo</label>
-              </div>
+              <ToggleSwitch
+                label="Agrupar por Ativo"
+                checked={groupByAsset}
+                onChange={(e) => setGroupByAsset(e.target.checked)}
+              />
               <InvestmentTypeFilter
                 options={investmentOptions}
                 selectedTypes={filterType}
@@ -398,37 +399,89 @@ export default function InvestimentosPage() {
             <p className="text-gray-500 dark:text-gray-400">Nenhum investimento salvo ainda.</p>
           ) : (
             <div className="space-y-2 mt-4">
-              {processedInvestments.map(inv => (
-                <div key={inv.id} className="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors duration-200">
-                  <div className="flex items-center gap-4 grow">
-                    <div>
-                      <span className="font-bold text-gray-800 dark:text-gray-100">{inv.symbol}</span>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{inv.name}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <p className="font-medium text-gray-800 dark:text-gray-100">
-                        {(inv.quantity * inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {inv.quantity} x {parseFloat(inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      </p>
-                    </div>
-                    {inv.type && (
-                      <span className="text-xs w-24 text-center px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">{labelFromType(inv.type)}</span>
-                    )}
-                    <button
-                      onClick={() => !groupByAsset && removeInvestment(inv.id)}
-                      className={`text-gray-400 hover:text-red-500 dark:hover:text-red-400 ${groupByAsset ? 'cursor-not-allowed opacity-50' : ''}`}
-                      disabled={groupByAsset}
-                      aria-label="Remover investimento"
+              {processedInvestments.map(inv => {
+                const isGrouped = groupByAsset && inv.originalIds?.length > 1;
+                const isExpanded = expandedGroups.includes(inv.id);
+
+                return (
+                  <div key={inv.id}>
+                    <div
+                      className={`flex justify-between items-center p-3 rounded-lg transition-colors duration-200 ${
+                        isGrouped
+                          ? 'bg-blue-50 dark:bg-blue-900/50 cursor-pointer'
+                          : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                      }`}
+                      onClick={() => isGrouped && toggleGroup(inv.id)}
                     >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                      <div className="flex items-center gap-4 grow">
+                        {isGrouped && (
+                          <ChevronDown className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                        )}
+                        <div>
+                          <span className="font-bold text-gray-800 dark:text-gray-100">{inv.symbol}</span>
+                          {isGrouped && (
+                            <span className="ml-2 text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">
+                              {inv.originalIds.length} compras
+                            </span>
+                          )}
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{inv.name}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <div className="text-right">
+                          <p className="font-medium text-gray-800 dark:text-gray-100">
+                            {(inv.quantity * inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {parseFloat(inv.quantity).toFixed(2)} x {parseFloat(inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </p>
+                        </div>
+                        <span className="w-24"></span>
+                        <button
+                          onClick={() => removeInvestment(originalInv.id)}
+                          className="text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                          aria-label="Remover compra"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                    {isExpanded && (
+                      <div className="pl-10 pt-2 pb-2 space-y-2">
+                        {investments
+                          .filter(originalInv => originalInv.symbol === inv.symbol)
+                          .map(originalInv => (
+                            <div key={originalInv.id} className="flex justify-between items-center p-2 rounded-lg bg-gray-100 dark:bg-gray-700/50">
+                              <div className="flex items-center gap-4 grow">
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  {new Date(originalInv.purchase_date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-6">
+                                <div className="text-right">
+                                  <p className="font-medium text-gray-800 dark:text-gray-100">
+                                    {(originalInv.quantity * originalInv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                  </p>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    {parseFloat(originalInv.quantity).toFixed(2)} x {parseFloat(originalInv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                  </p>
+                                </div>
+                                <span className="w-24"></span>
+                                <button
+                                  onClick={() => removeInvestment(originalInv.id)}
+                                  className="text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                                  aria-label="Remover compra"
+                                >
+                                  <Trash2 className="w-5 h-5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </Card>
