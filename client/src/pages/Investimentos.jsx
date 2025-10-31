@@ -7,7 +7,7 @@ import Input from '../components/Input';
 import InvestmentSearchPopover from '../components/InvestmentSearchPopover';
 import InvestmentTypeFilter from '../components/InvestmentTypeFilter'; // New import
 import DateRangePicker from '../components/DateRangePicker';
-import { Plus } from 'lucide-react';
+import { Plus, X, Trash2 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
@@ -46,7 +46,6 @@ export default function InvestimentosPage() {
   // New states for grouping and filtering
   const [groupByAsset, setGroupByAsset] = useState(false);
   const [filterType, setFilterType] = useState([]); // Changed to array
-  const [triggerFilter, setTriggerFilter] = useState(0); // Used to manually trigger filter re-evaluation
 
   // Busca preço (cotação) pelo backend, autenticado
   const handleSelectInvestment = async (investment) => {
@@ -155,7 +154,7 @@ export default function InvestimentosPage() {
     }
 
     return filtered;
-  }, [investments, groupByAsset, filterType, startDate, endDate, triggerFilter]);
+  }, [investments, groupByAsset, filterType, startDate, endDate]);
 
   // Dados para gráfico - agrupa por type salvo
   const chartData = useMemo(() => {
@@ -167,25 +166,13 @@ export default function InvestimentosPage() {
     return Object.entries(map).map(([type, value]) => ({ name: labelFromType(type), value }));
   }, [processedInvestments]);
 
-
-  const handleApplyFilters = () => {
-    setTriggerFilter(prev => prev + 1);
-  };
-
-  const handleClearFilters = () => {
-    setFilterType([]); // Reset to empty array
-    updateDates(null, null);
-    setGroupByAsset(false);
-    setTriggerFilter(prev => prev + 1);
-  };
-
   return (
     <div>
       <Header title="Carteira de Investimentos" />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Coluna do Formulário */}
-        <div className="lg:col-span-1 flex flex-col">
-          <Card className="flex-grow">
+        <div className="lg:col-span-1">
+          <Card className="h-full">
             <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Adicionar Investimento</h2>
             <form onSubmit={handleAddInvestment} className="space-y-4">
               <div className="relative">
@@ -247,90 +234,92 @@ export default function InvestimentosPage() {
         </div>
         {/* Coluna de Detalhes do Ativo */}
         {assetQuote && (
-          <div className="lg:col-span-1 flex flex-col">
-            <Card className="p-6 rounded-lg border border-gray-700 flex-grow">
-              <div className="flex items-center mb-4">
-                {assetQuote.logourl && (
-                  <img src={assetQuote.logourl} alt={`${assetQuote.symbol} logo`} className="w-10 h-10 mr-3" />
-                )}
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-200">{assetQuote.symbol}</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{assetQuote.longName || assetQuote.shortName}</p>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <p className="text-sm text-gray-400">Preço Atual</p>
-                <p className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                  {assetQuote.regularMarketPrice?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                </p>
-                <p className={`text-xl font-bold ${parseFloat(assetQuote.regularMarketChange) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {!isNaN(parseFloat(assetQuote.regularMarketChange)) ? parseFloat(assetQuote.regularMarketChange).toFixed(2) : 'N/A'} ({!isNaN(parseFloat(assetQuote.regularMarketChangePercent)) ? parseFloat(assetQuote.regularMarketChangePercent).toFixed(2) : 'N/A'}%)
-                </p>
-              </div>
-
-              {/* Agrupamento 1: Desempenho do Dia */}
-              <div className="mt-5 border-t border-gray-200 dark:border-gray-700 pt-4">
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Desempenho do Dia</h3>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                  <p className="text-gray-400 text-sm">Abertura:</p>
-                  <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.regularMarketOpen?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                  <p className="text-gray-400 text-sm">Máxima do Dia:</p>
-                  <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.regularMarketDayHigh?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                  <p className="text-gray-400 text-sm">Mínima do Dia:</p>
-                  <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.regularMarketDayLow?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                  <p className="text-gray-400 text-sm">Fechamento Anterior:</p>
-                  <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.regularMarketPreviousClose?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                  <p className="text-gray-400 text-sm">Volume:
-                  </p><p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.regularMarketVolume?.toLocaleString('pt-BR')}
-                  </p>
-                </div>
-              </div>
-
-              {/* Agrupamento 2: Período de 52 Semanas */}
-              <div className="mt-5 border-t border-gray-200 dark:border-gray-700 pt-4">
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Período de 52 Semanas</h3>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                  <p className="text-gray-400 text-sm">Máxima 52 Semanas:</p>
-                  <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.fiftyTwoWeekHigh?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                  <p className="text-gray-400 text-sm">Mínima 52 Semanas:</p>
-                  <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.fiftyTwoWeekLow?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                </div>
-              </div>
-
-              {/* Outras Métricas */}
-              {(assetQuote.marketCap || assetQuote.priceEarnings) && (
-                <div className="mt-5 border-t border-gray-200 dark:border-gray-700 pt-4">
-                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Outras Métricas</h3>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                    {assetQuote.marketCap && (
-                      <>
-                        <p className="text-gray-400 text-sm">Valor de Mercado:</p>
-                        <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.marketCap?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</p>
-                      </>
-                    )}
-                    {assetQuote.priceEarnings && (
-                      <>
-                        <p className="text-gray-400 text-sm">P/L:</p>
-                        <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.priceEarnings?.toFixed(2)}</p>
-                      </>
-                    )}
+          <div className="lg:col-span-1 relative">
+            <Card className="p-6 rounded-lg flex flex-col absolute inset-0">
+              <div className="overflow-y-auto flex-1 min-h-0">
+                <div className="flex items-center mb-4">
+                  {assetQuote.logourl && (
+                    <img src={assetQuote.logourl} alt={`${assetQuote.symbol} logo`} className="w-10 h-10 mr-3" />
+                  )}
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-200">{assetQuote.symbol}</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{assetQuote.longName || assetQuote.shortName}</p>
                   </div>
                 </div>
-              )}
 
-              {/* Rodapé: Horário da Cotação */}
-              {assetQuote.regularMarketTime && (
-                <div className="mt-5 border-t border-gray-200 dark:border-gray-700 pt-4 text-right text-xs text-gray-500 dark:text-gray-400">
-                  Última atualização: {new Date(assetQuote.regularMarketTime).toLocaleString('pt-BR')}
+                <div className="mb-4">
+                  <p className="text-sm text-gray-400">Preço Atual</p>
+                  <p className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                    {assetQuote.regularMarketPrice?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </p>
+                  <p className={`text-xl font-bold ${parseFloat(assetQuote.regularMarketChange) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {!isNaN(parseFloat(assetQuote.regularMarketChange)) ? parseFloat(assetQuote.regularMarketChange).toFixed(2) : 'N/A'} ({!isNaN(parseFloat(assetQuote.regularMarketChangePercent)) ? parseFloat(assetQuote.regularMarketChangePercent).toFixed(2) : 'N/A'}%)
+                  </p>
                 </div>
-              )}
+
+                {/* Agrupamento 1: Desempenho do Dia */}
+                <div className="mt-5 border-t border-gray-200 dark:border-gray-700 pt-4">
+                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Desempenho do Dia</h3>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                    <p className="text-gray-400 text-sm">Abertura:</p>
+                    <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.regularMarketOpen?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                    <p className="text-gray-400 text-sm">Máxima do Dia:</p>
+                    <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.regularMarketDayHigh?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                    <p className="text-gray-400 text-sm">Mínima do Dia:</p>
+                    <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.regularMarketDayLow?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                    <p className="text-gray-400 text-sm">Fechamento Anterior:</p>
+                    <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.regularMarketPreviousClose?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                    <p className="text-gray-400 text-sm">Volume:
+                    </p><p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.regularMarketVolume?.toLocaleString('pt-BR')}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Agrupamento 2: Período de 52 Semanas */}
+                <div className="mt-5 border-t border-gray-200 dark:border-gray-700 pt-4">
+                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Período de 52 Semanas</h3>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                    <p className="text-gray-400 text-sm">Máxima 52 Semanas:</p>
+                    <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.fiftyTwoWeekHigh?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                    <p className="text-gray-400 text-sm">Mínima 52 Semanas:</p>
+                    <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.fiftyTwoWeekLow?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                  </div>
+                </div>
+
+                {/* Outras Métricas */}
+                {(assetQuote.marketCap || assetQuote.priceEarnings) && (
+                  <div className="mt-5 border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Outras Métricas</h3>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                      {assetQuote.marketCap && (
+                        <>
+                          <p className="text-gray-400 text-sm">Valor de Mercado:</p>
+                          <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.marketCap?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</p>
+                        </>
+                      )}
+                      {assetQuote.priceEarnings && (
+                        <>
+                          <p className="text-gray-400 text-sm">P/L:</p>
+                          <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.priceEarnings?.toFixed(2)}</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Rodapé: Horário da Cotação */}
+                {assetQuote.regularMarketTime && (
+                  <div className="mt-5 border-t border-gray-200 dark:border-gray-700 pt-4 text-right text-xs text-gray-500 dark:text-gray-400">
+                    Última atualização: {new Date(assetQuote.regularMarketTime).toLocaleString('pt-BR')}
+                  </div>
+                )}
+              </div>
             </Card>
           </div>
         )}
         {/* Coluna do Gráfico */}
-        <div className="lg:col-span-1 flex flex-col">
-          <Card className="flex-grow">
+        <div className="lg:col-span-1">
+          <Card className="h-full">
             <div className="flex justify-between items-center mb-2">
               <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Alocação da Carteira</h2>
               <div className="text-right">
@@ -408,25 +397,39 @@ export default function InvestimentosPage() {
           ) : processedInvestments.length === 0 ? (
             <p className="text-gray-500 dark:text-gray-400">Nenhum investimento salvo ainda.</p>
           ) : (
-            <ul>
+            <div className="space-y-2 mt-4">
               {processedInvestments.map(inv => (
-                <li key={inv.id} className="flex justify-between items-center border-b border-gray-200 dark:border-gray-600 py-2">
-                  <div>
-                    <span className="font-bold text-gray-700 dark:text-gray-100">{inv.symbol}</span>{' '}
-                    <span className="text-gray-600 dark:text-gray-400">{inv.name}</span>
-                    <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">({inv.quantity} x {parseFloat(inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})</span>
-                    {inv.type && (
-                      <span className="ml-2 text-xs px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">{labelFromType(inv.type)}</span>
-                    )}
+                <div key={inv.id} className="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors duration-200">
+                  <div className="flex items-center gap-4 grow">
+                    <div>
+                      <span className="font-bold text-gray-800 dark:text-gray-100">{inv.symbol}</span>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{inv.name}</p>
+                    </div>
                   </div>
-                  <Button
-                    variant="danger"
-                    onClick={() => removeInvestment(inv.id)}
-                    size="sm"
-                  >Excluir</Button>
-                </li>
+                  <div className="flex items-center gap-6">
+                    <div className="text-right">
+                      <p className="font-medium text-gray-800 dark:text-gray-100">
+                        {(inv.quantity * inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {inv.quantity} x {parseFloat(inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </p>
+                    </div>
+                    {inv.type && (
+                      <span className="text-xs w-24 text-center px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">{labelFromType(inv.type)}</span>
+                    )}
+                    <button
+                      onClick={() => !groupByAsset && removeInvestment(inv.id)}
+                      className={`text-gray-400 hover:text-red-500 dark:hover:text-red-400 ${groupByAsset ? 'cursor-not-allowed opacity-50' : ''}`}
+                      disabled={groupByAsset}
+                      aria-label="Remover investimento"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </Card>
       </div>

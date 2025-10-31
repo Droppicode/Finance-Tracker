@@ -23,7 +23,7 @@ export const InvestmentProvider = ({ children }) => {
         const res = await getInvestments();
         setInvestments(res.data);
         setError(null);
-      } catch (err) {
+      } catch {
         setError('Erro ao carregar investimentos.');
       } finally {
         setLoading(false);
@@ -63,7 +63,7 @@ export const InvestmentProvider = ({ children }) => {
     setInvestments(prev => prev.filter(inv => inv.id !== id));
     try {
       await deleteInvestment(id);
-    } catch (err) {
+    } catch {
       setInvestments(original);
       setError('Erro ao excluir investimento.');
     }

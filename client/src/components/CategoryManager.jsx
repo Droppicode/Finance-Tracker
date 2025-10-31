@@ -31,7 +31,7 @@ export default function CategoryManager({ categories, onSelectCategory, onAddCat
           value={newCategory}
           onChange={(e) => setNewCategory(e.target.value)}
           placeholder="Nova categoria"
-          className="flex-grow p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          className="grow p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         />
         <Button onClick={handleAddCategory} variant="primary" size="icon">
           <Plus className="w-5 h-5" />

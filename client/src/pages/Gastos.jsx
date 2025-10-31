@@ -17,12 +17,6 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
-// Helper to get date strings in YYYY-MM-DD format
-const toYYYYMMDD = (date) => {
-  if (!date) return '';
-  return date.toISOString().split('T')[0];
-}
-
 export default function GastosPage() {
   const { 
     transactions, 

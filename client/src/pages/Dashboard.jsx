@@ -20,12 +20,6 @@ import {
   ZoomOut
 } from 'lucide-react';
 
-// Helper to get date strings in YYYY-MM-DD format
-const toYYYYMMDD = (date) => {
-  if (!date) return '';
-  return date.toISOString().split('T')[0];
-}
-
 // Configure o worker do PDF.js
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
