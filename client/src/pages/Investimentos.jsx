@@ -212,8 +212,15 @@ export default function InvestimentosPage() {
               </div>
               {isPriceLoading && <p className="text-sm text-gray-500 dark:text-gray-400">Carregando preço...</p>}
               {assetPrice !== null && (
-                <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-md">
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Preço por unidade: <span className="font-bold text-gray-800 dark:text-gray-100">{parseFloat(assetPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preço por unidade</label>
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    value={assetPrice}
+                    onChange={(e) => setAssetPrice(e.target.value)}
+                    disabled={isPriceLoading}
+                  />
                 </div>
               )}
               <div>
@@ -436,7 +443,9 @@ export default function InvestimentosPage() {
                             {parseFloat(inv.quantity).toFixed(2)} x {parseFloat(inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                           </p>
                         </div>
-                        <span className="w-24"></span>
+                        {inv.type && (
+                          <span className="text-xs w-24 text-center px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">{labelFromType(inv.type)}</span>
+                        )}
                         <button
                           onClick={() => removeInvestment(inv.id)}
                           className="text-gray-400 hover:text-red-500 dark:hover:text-red-400"
