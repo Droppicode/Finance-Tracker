@@ -148,24 +148,7 @@ class InvestmentViewSet(viewsets.ModelViewSet):
         return self.queryset.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        user = self.request.user
-        symbol = serializer.validated_data.get('symbol')
-        purchase_date = serializer.validated_data.get('purchase_date')
-        quantity = serializer.validated_data.get('quantity')
-
-        existing_investment = Investment.objects.filter(
-            user=user,
-            symbol=symbol,
-            purchase_date=purchase_date
-        ).first()
-
-        if existing_investment:
-            existing_investment.quantity += quantity
-            existing_investment.save()
-            # Optionally, you might want to re-serialize and return the updated instance
-            # For now, we'll just save and let the default list view handle retrieval
-        else:
-            serializer.save(user=user)
+        serializer.save(user=self.request.user)
 
 class ProfilePictureProxyView(APIView):
     def get(self, request, *args, **kwargs):

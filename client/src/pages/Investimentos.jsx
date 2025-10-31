@@ -438,7 +438,7 @@ export default function InvestimentosPage() {
                         </div>
                         <span className="w-24"></span>
                         <button
-                          onClick={() => removeInvestment(originalInv.id)}
+                          onClick={() => removeInvestment(inv.id)}
                           className="text-gray-400 hover:text-red-500 dark:hover:text-red-400"
                           aria-label="Remover compra"
                         >

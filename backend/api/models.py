@@ -44,9 +44,6 @@ class Investment(models.Model):
     notes = models.TextField(null=True, blank=True)
     type = models.CharField(max_length=32, blank=True, default="")
 
-    class Meta:
-        unique_together = ("user", "symbol", "purchase_date")
-
     def __str__(self):
         return f"{self.symbol} ({self.quantity}) @ {self.price}"
 
