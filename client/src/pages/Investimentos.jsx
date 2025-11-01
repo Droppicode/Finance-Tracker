@@ -182,9 +182,11 @@ export default function InvestimentosPage() {
   return (
     <div>
       <Header title="Carteira de Investimentos" />
+
+      {/* First Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Coluna do Formulário */}
-        <div className="lg:col-span-1">
+        <div className="h-[30rem] lg:h-[33rem] lg:col-span-1">
           <Card className="h-full">
             <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Adicionar Investimento</h2>
             <form onSubmit={handleAddInvestment} className="space-y-4">
@@ -272,9 +274,10 @@ export default function InvestimentosPage() {
             </form>
           </Card>
         </div>
-        {/* Coluna de Detalhes do Ativo */}
-        {assetQuote && (
-          <div className="h-[30rem] lg:h-auto lg:relative lg:col-span-1">
+
+        {/* Coluna de Detalhes do Ativo ou Gráfico */}
+        {assetQuote ? (
+          <div className="h-[30rem] lg:h-auto lg:relative lg:col-span-2">
             <Card className="h-full lg:absolute lg:inset-0 flex flex-col">
               <div className={`flex-1 min-h-0 ${!showChart ? 'overflow-y-auto' : 'flex flex-col overflow-x-auto'}`}>
                 <div className="flex items-center justify-between mb-4">
@@ -311,7 +314,6 @@ export default function InvestimentosPage() {
                       </p>
                     </div>
 
-                    {/* Agrupamento 1: Desempenho do Dia */}
                     <div className="mt-5 border-t border-gray-200 dark:border-gray-700 pt-4">
                       <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Desempenho do Dia</h3>
                       <div className="grid grid-cols-2 gap-x-4 gap-y-3">
@@ -323,13 +325,11 @@ export default function InvestimentosPage() {
                         <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.regularMarketDayLow?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                         <p className="text-gray-400 text-sm">Fechamento Anterior:</p>
                         <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.regularMarketPreviousClose?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                        <p className="text-gray-400 text-sm">Volume:
-                        </p><p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.regularMarketVolume?.toLocaleString('pt-BR')}
-                        </p>
+                        <p className="text-gray-400 text-sm">Volume:</p>
+                        <p className="text-gray-800 dark:text-gray-100 font-medium text-sm">{assetQuote.regularMarketVolume?.toLocaleString('pt-BR')}</p>
                       </div>
                     </div>
 
-                    {/* Agrupamento 2: Período de 52 Semanas */}
                     <div className="mt-5 border-t border-gray-200 dark:border-gray-700 pt-4">
                       <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Período de 52 Semanas</h3>
                       <div className="grid grid-cols-2 gap-x-4 gap-y-3">
@@ -340,7 +340,6 @@ export default function InvestimentosPage() {
                       </div>
                     </div>
 
-                    {/* Outras Métricas */}
                     {(assetQuote.marketCap || assetQuote.priceEarnings) && (
                       <div className="mt-5 border-t border-gray-200 dark:border-gray-700 pt-4">
                         <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Outras Métricas</h3>
@@ -361,7 +360,6 @@ export default function InvestimentosPage() {
                       </div>
                     )}
 
-                    {/* Rodapé: Horário da Cotação */}
                     {assetQuote.regularMarketTime && (
                       <div className="mt-5 border-t border-gray-200 dark:border-gray-700 pt-4 text-right text-xs text-gray-500 dark:text-gray-400">
                         Última atualização: {new Date(assetQuote.regularMarketTime).toLocaleString('pt-BR')}
@@ -372,168 +370,207 @@ export default function InvestimentosPage() {
               </div>
             </Card>
           </div>
-        )}
-        {/* Coluna do Gráfico */}
-        <div className={assetQuote ? "lg:col-span-1" : "lg:col-span-2"}>
-          <Card className="h-full">
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Alocação da Carteira</h2>
-              <div className="text-right">
-                <span className="text-sm text-gray-500 dark:text-gray-400">Total Investido</span>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-500">
-                  {totalInvested.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                </p>
+        ) : (
+          <div className="lg:col-span-2">
+            <Card className="h-full">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Alocação da Carteira</h2>
+                <div className="text-right">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Total Investido</span>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-500">
+                    {totalInvested.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </p>
+                </div>
               </div>
-            </div>
-            <div style={{ width: '100%', height: 400 }}>
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={150}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS_INVESTMENTS[index % COLORS_INVESTMENTS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value) =>
-                      value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                    }
-                  />
-                  <Legend wrapperStyle={{ color: 'var(--legend-text, #374151)' }} className="dark:[--legend-text:#d1d5db]" />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-
-          </Card>
-        </div>
+              <div style={{ width: '100%', height: 400 }}>
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={150}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS_INVESTMENTS[index % COLORS_INVESTMENTS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} />
+                    <Legend wrapperStyle={{ color: 'var(--legend-text, #374151)' }} className="dark:[--legend-text:#d1d5db]" />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </div>
+        )}
       </div>
 
-      {/* Investimentos Salvos - Nova Seção */}
-      <div className="mt-6">
-        <Card>
-          <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Investimentos Salvos</h3>
-            <div className="flex flex-wrap items-center gap-4">
-              <ToggleSwitch
-                label="Agrupar por Ativo"
-                checked={groupByAsset}
-                onChange={(e) => setGroupByAsset(e.target.checked)}
-              />
-              <InvestmentTypeFilter
-                options={investmentOptions}
-                selectedTypes={filterType}
-                onChange={setFilterType}
-              />
-              <DateRangePicker
-                startDate={startDate}
-                endDate={endDate}
-                onStartDateChange={(newStartDate) => updateDates(newStartDate, endDate)}
-                onEndDateChange={(newEndDate) => updateDates(startDate, newEndDate)}
-              />
-            </div>
-          </div>
-          {loading ? (
-            <p className="text-gray-500 dark:text-gray-400">Carregando...</p>
-          ) : processedInvestments.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400">Nenhum investimento salvo ainda.</p>
-          ) : (
-            <div className="space-y-2 mt-4">
-              {processedInvestments.map(inv => {
-                const isGrouped = groupByAsset && inv.originalIds?.length > 1;
-                const isExpanded = expandedGroups.includes(inv.id);
+      {/* Second Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        <div className={assetQuote ? "lg:col-span-2" : "lg:col-span-3"}>
+          <div className="h-[38rem] lg:relative lg:col-span-2">
+            <Card className="h-full lg:absolute lg:inset-0">
+              <div className="h-full overflow-y-auto">
+                <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Investimentos Salvos</h3>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <ToggleSwitch
+                      label="Agrupar por Ativo"
+                      checked={groupByAsset}
+                      onChange={(e) => setGroupByAsset(e.target.checked)}
+                    />
+                    <InvestmentTypeFilter
+                      options={investmentOptions}
+                      selectedTypes={filterType}
+                      onChange={setFilterType}
+                    />
+                    <DateRangePicker
+                      startDate={startDate}
+                      endDate={endDate}
+                      onStartDateChange={(newStartDate) => updateDates(newStartDate, endDate)}
+                      onEndDateChange={(newEndDate) => updateDates(startDate, newEndDate)}
+                    />
+                  </div>
+                </div>
+                {loading ? (
+                  <p className="text-gray-500 dark:text-gray-400">Carregando...</p>
+                ) : processedInvestments.length === 0 ? (
+                  <p className="text-gray-500 dark:text-gray-400">Nenhum investimento salvo ainda.</p>
+                ) : (
+                  <div className="space-y-2 mt-4">
+                    {processedInvestments.map(inv => {
+                      const isGrouped = groupByAsset && inv.originalIds?.length > 1;
+                      const isExpanded = expandedGroups.includes(inv.id);
 
-                return (
-                  <div key={inv.id}>
-                    <div
-                      className={`flex justify-between items-center p-3 rounded-lg transition-colors duration-200 ${
-                        isGrouped
-                          ? 'bg-blue-50 dark:bg-blue-900/50 cursor-pointer'
-                          : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50'
-                      }`}
-                      onClick={() => isGrouped && toggleGroup(inv.id)}
-                    >
-                      <div className="flex items-center gap-4 grow">
-                        {isGrouped && (
-                          <ChevronDown className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                        )}
-                        <div>
-                          <span className="font-bold text-gray-800 dark:text-gray-100">{inv.symbol}</span>
-                          {isGrouped && (
-                            <span className="ml-2 text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">
-                              {inv.originalIds.length} compras
-                            </span>
-                          )}
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{inv.name}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-6">
-                        <div className="text-right">
-                          <p className="font-medium text-gray-800 dark:text-gray-100">
-                            {(inv.quantity * inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {parseFloat(inv.quantity).toFixed(2)} x {parseFloat(inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                          </p>
-                        </div>
-                        {inv.type && (
-                          <span className="text-xs w-24 text-center px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">{labelFromType(inv.type)}</span>
-                        )}
-                        <button
-                          onClick={() => removeInvestment(inv.id)}
-                          className="text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                          aria-label="Remover compra"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-                    {isExpanded && (
-                      <div className="pl-10 pt-2 pb-2 space-y-2">
-                        {investments
-                          .filter(originalInv => originalInv.symbol === inv.symbol)
-                          .map(originalInv => (
-                            <div key={originalInv.id} className="flex justify-between items-center p-2 rounded-lg bg-gray-100 dark:bg-gray-700/50">
-                              <div className="flex items-center gap-4 grow">
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  {new Date(originalInv.purchase_date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-6">
-                                <div className="text-right">
-                                  <p className="font-medium text-gray-800 dark:text-gray-100">
-                                    {(originalInv.quantity * originalInv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                  </p>
-                                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    {parseFloat(originalInv.quantity).toFixed(2)} x {parseFloat(originalInv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                  </p>
-                                </div>
-                                <span className="w-24"></span>
-                                <button
-                                  onClick={() => removeInvestment(originalInv.id)}
-                                  className="text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                                  aria-label="Remover compra"
-                                >
-                                  <Trash2 className="w-5 h-5" />
-                                </button>
+                      return (
+                        <div key={inv.id}>
+                          <div
+                            className={`flex justify-between items-center p-3 rounded-lg transition-colors duration-200 ${
+                              isGrouped
+                                ? 'bg-blue-50 dark:bg-blue-900/50 cursor-pointer'
+                                : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                            }`}
+                            onClick={() => isGrouped && toggleGroup(inv.id)}
+                          >
+                            <div className="flex items-center gap-4 grow">
+                              {isGrouped && (
+                                <ChevronDown className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                              )}
+                              <div>
+                                <span className="font-bold text-gray-800 dark:text-gray-100">{inv.symbol}</span>
+                                {isGrouped && (
+                                  <span className="ml-2 text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">
+                                    {inv.originalIds.length} compras
+                                  </span>
+                                )}
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{inv.name}</p>
                               </div>
                             </div>
-                          ))}
-                      </div>
-                    )}
+                            <div className="flex items-center gap-6">
+                              <div className="text-right">
+                                <p className="font-medium text-gray-800 dark:text-gray-100">
+                                  {(inv.quantity * inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                </p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  {parseFloat(inv.quantity).toFixed(2)} x {parseFloat(inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                </p>
+                              </div>
+                              {inv.type && (
+                                <span className="text-xs w-24 text-center px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">{labelFromType(inv.type)}</span>
+                              )}
+                              <button
+                                onClick={() => removeInvestment(inv.id)}
+                                className="text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                                aria-label="Remover compra"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </div>
+                          {isExpanded && (
+                            <div className="pl-10 pt-2 pb-2 space-y-2">
+                              {investments
+                                .filter(originalInv => originalInv.symbol === inv.symbol)
+                                .map(originalInv => (
+                                  <div key={originalInv.id} className="flex justify-between items-center p-2 rounded-lg bg-gray-100 dark:bg-gray-700/50">
+                                    <div className="flex items-center gap-4 grow">
+                                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                                        {new Date(originalInv.purchase_date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-6">
+                                      <div className="text-right">
+                                        <p className="font-medium text-gray-800 dark:text-gray-100">
+                                          {(originalInv.quantity * originalInv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                        </p>
+                                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                                          {parseFloat(originalInv.quantity).toFixed(2)} x {parseFloat(originalInv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                        </p>
+                                      </div>
+                                      <span className="w-24"></span>
+                                      <button
+                                        onClick={() => removeInvestment(originalInv.id)}
+                                        className="text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                                        aria-label="Remover compra"
+                                      >
+                                        <Trash2 className="w-5 h-5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </Card>
+                )}
+              </div>
+            </Card>
+          </div>
+        </div>
+
+        {assetQuote && (
+          <div className="lg:col-span-1">
+            <Card className="h-full">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Alocação da Carteira</h2>
+                <div className="text-right">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Total Investido</span>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-500">
+                    {totalInvested.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </p>
+                </div>
+              </div>
+              <div style={{ width: '100%', height: 400 }}>
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={150}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS_INVESTMENTS[index % COLORS_INVESTMENTS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} />
+                    <Legend wrapperStyle={{ color: 'var(--legend-text, #374151)' }} className="dark:[--legend-text:#d1d5db]" />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );
