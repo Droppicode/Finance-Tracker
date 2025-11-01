@@ -35,7 +35,10 @@ export const InvestmentProvider = ({ children }) => {
   const addInvestment = async (investment) => {
     try {
       const res = await createInvestment(investment);
-      setInvestments(prev => [...prev, res.data]);
+      setInvestments(prev => {
+        const newState = [...prev, res.data];
+        return newState;
+      });
       return res.data;
     } catch (err) {
       setError('Erro ao adicionar investimento.');

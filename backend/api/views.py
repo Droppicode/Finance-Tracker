@@ -12,6 +12,7 @@ import os
 import logging
 import requests
 from django.http import HttpResponse
+from datetime import date, timedelta
 
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
@@ -94,7 +95,16 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 class UserProfileView(APIView):
     def get(self, request, *args, **kwargs):
-        profile, _ = UserProfile.objects.get_or_create(user=request.user)
+        profile, created = UserProfile.objects.get_or_create(user=request.user)
+        
+        today = date.today()
+        # if created or not profile.last_login or profile.last_login < today:
+        if created or not profile.last_login or profile.last_login < today:
+            profile.last_login = today
+            profile.end_date = today
+            profile.start_date = today - timedelta(days=30)
+            profile.save()
+
         serializer = UserProfileSerializer(profile)
         return Response(serializer.data)
 

@@ -28,6 +28,7 @@ class UserProfile(models.Model):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     filtered_categories = models.JSONField(default=list, null=True, blank=True)
+    last_login = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return self.user.username
@@ -46,6 +47,3 @@ class Investment(models.Model):
 
     def __str__(self):
         return f"{self.symbol} ({self.quantity}) @ {self.price}"
-
-    
-        type = models.CharField(max_length=32, blank=True, default="")

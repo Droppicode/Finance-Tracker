@@ -23,10 +23,10 @@ export const UtilsProvider = ({ children }) => {
           setLoading(true);
           const profile = await getProfile();
           if (profile.data.start_date) {
-            setStartDate(new Date(profile.data.start_date));
+            setStartDate(new Date(profile.data.start_date.replace(/-/g, '/'))); // Timezone fix
           }
           if (profile.data.end_date) {
-            setEndDate(new Date(profile.data.end_date));
+            setEndDate(new Date(profile.data.end_date.replace(/-/g, '/'))); // Timezone fix
           }
         } catch (err) {
           setError(err);
@@ -47,10 +47,10 @@ export const UtilsProvider = ({ children }) => {
         end_date: newEndDate ? newEndDate.toISOString().split('T')[0] : null,
       });
       if (updatedProfile.data.start_date) {
-        setStartDate(new Date(updatedProfile.data.start_date));
+        setStartDate(new Date(updatedProfile.data.start_date.replace(/-/g, '/'))); // Timezone fix
       }
       if (updatedProfile.data.end_date) {
-        setEndDate(new Date(updatedProfile.data.end_date));
+        setEndDate(new Date(updatedProfile.data.end_date.replace(/-/g, '/'))); // Timezone fix
       }
       return updatedProfile;
     } catch (err) {

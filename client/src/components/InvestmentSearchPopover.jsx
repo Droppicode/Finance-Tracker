@@ -32,7 +32,6 @@ const InvestmentSearchPopover = ({ searchTerm, onSearchSubmit, onSelectInvestmen
     setSearchError(null);
     try {
       const response = await axiosInstance.get(`/api/investments/search/?symbol=${searchTerm}`);
-      console.log("Investments List; ", response.data)
       setLastSearchTerm(searchTerm);
       setSearchResults(response.data || []);
     } catch (err) {

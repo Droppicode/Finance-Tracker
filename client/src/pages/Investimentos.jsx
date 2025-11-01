@@ -43,6 +43,7 @@ export default function InvestimentosPage() {
   const [assetType, setAssetType] = useState("");
   const [showSearchPopover, setShowSearchPopover] = useState(false);
   const searchPopoverRef = useRef(null);
+  const [isEditingPrice, setIsEditingPrice] = useState(false);
 
   // New states for grouping and filtering
   const [groupByAsset, setGroupByAsset] = useState(false);
@@ -56,9 +57,9 @@ export default function InvestimentosPage() {
     setIsPriceLoading(true);
     setAssetPrice(null);
     setAssetQuote(null);
+    setIsEditingPrice(false);
     try {
       const response = await axiosInstance.get(`/api/investments/quote/?symbol=${investment.stock}`);
-      console.log("Investment data: ", response.data)
       setAssetPrice(response.data.regularMarketPrice);
       setAssetQuote(response.data);
 
@@ -214,19 +215,40 @@ export default function InvestimentosPage() {
               {assetPrice !== null && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preço por unidade</label>
-                  <Input
-                    type="number"
-                    placeholder="0.00"
-                    value={assetPrice}
-                    onChange={(e) => setAssetPrice(e.target.value)}
-                    disabled={isPriceLoading}
-                  />
+                  {isEditingPrice ? (
+                    <Input
+                      type="number"
+                      step="any"
+                      placeholder="0.00"
+                      value={assetPrice}
+                      onChange={(e) => setAssetPrice(e.target.value)}
+                      onBlur={() => setIsEditingPrice(false)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          e.target.closest('form').requestSubmit();
+                        }
+                      }}
+                      autoFocus
+                      disabled={isPriceLoading}
+                    />
+                  ) : (
+                    <div
+                      className="w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 border border-gray-300 dark:border-gray-600"
+                      onClick={() => setIsEditingPrice(true)}
+                    >
+                      <p className="text-gray-900 dark:text-white">
+                        {parseFloat(assetPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantidade</label>
                 <Input
                   type="number"
+                  step="any"
                   placeholder="100"
                   value={assetQuantity}
                   onChange={(e) => setAssetQuantity(e.target.value)}
