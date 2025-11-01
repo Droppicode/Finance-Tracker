@@ -5,10 +5,24 @@ import {
 import axiosInstance from '../api/axios';
 import Button from './Button';
 
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-lg border border-gray-200 dark:border-gray-700">
+        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{label}</p>
+        <p className="text-sm text-gray-700 dark:text-gray-300">
+          Preço: {payload[0].value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
 const AssetChart = ({ symbol }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [range, setRange] = useState('1mo'); // Default range
+  const [range, setRange] = useState('3mo'); // Default range
 
   useEffect(() => {
     const fetchChartData = async () => {
@@ -80,13 +94,12 @@ const AssetChart = ({ symbol }) => {
               </linearGradient>
             </defs>
             <XAxis dataKey="date" />
-            <YAxis domain={['dataMin', 'dataMax']} />
-            <CartesianGrid strokeDasharray="3 3" />
-            <Tooltip
-              formatter={(value) =>
-                value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-              }
+            <YAxis 
+              domain={[dataMin => dataMin * 0.99, dataMax => dataMax * 1.01]}
+              tickFormatter={(value) => value.toFixed(2)} 
             />
+            <CartesianGrid strokeDasharray="3 3" />
+            <Tooltip content={<CustomTooltip />} />
             <Area type="monotone" dataKey="price" stroke="#8884d8" fillOpacity={1} fill="url(#colorPrice)" />
           </AreaChart>
         </ResponsiveContainer>
