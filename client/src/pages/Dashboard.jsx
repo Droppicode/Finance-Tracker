@@ -184,7 +184,7 @@ export default function DashboardPage() {
         <Card>
           <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
             <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Transações</h2>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center gap-4">
                 <CategoryFilter 
                   allCategories={categories}
                   selectedIds={selectedCategoryIds}

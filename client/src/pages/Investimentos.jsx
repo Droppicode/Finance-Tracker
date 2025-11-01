@@ -403,7 +403,7 @@ export default function InvestimentosPage() {
         <Card>
           <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Investimentos Salvos</h3>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center gap-4">
               <ToggleSwitch
                 label="Agrupar por Ativo"
                 checked={groupByAsset}
