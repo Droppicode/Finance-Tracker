@@ -137,11 +137,14 @@ class InvestmentSearchView(APIView):
 class InvestmentQuoteView(APIView):
     def get(self, request, *args, **kwargs):
         symbol = request.query_params.get('symbol')
+        range_param = request.query_params.get('range', '1mo')
+        interval_param = request.query_params.get('interval', '1d')
+
         if not symbol:
             return Response({'error': 'Parâmetro "symbol" é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            results = brapi_api.get_quote(symbol)
+            results = brapi_api.get_quote(symbol, range=range_param, interval=interval_param)
             return Response(results.get('results', [{}])[0], status=status.HTTP_200_OK)
         except ValueError as e:
             logging.exception("Value Error processing statement")

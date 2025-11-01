@@ -21,7 +21,10 @@ def search_symbol(symbol):
     }
     return _make_request(endpoint, params)
 
-def get_quote(symbol):
+def get_quote(symbol, range="1mo", interval="1d"):
     endpoint = f"quote/{symbol}"
-    params = {}
+    params = {
+        "range": range,
+        "interval": interval,
+    }
     return _make_request(endpoint, params)
