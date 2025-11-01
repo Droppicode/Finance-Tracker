@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { TransactionProvider } from './context/TransactionContext';
 import { InvestmentProvider } from './context/InvestmentContext';
-import { UtilsProvider } from './context/UtilsContext';
+import { UtilsProvider, useUtils } from './context/UtilsContext';
 import { getProfile, updateProfile } from './api/profile';
 import DashboardPage from './pages/Dashboard';
 import GastosPage from './pages/Gastos';
@@ -13,9 +13,16 @@ import Sidebar from './components/Sidebar';
 
 const MainLayout = ({ children, isDarkMode, setIsDarkMode }) => {
   const { user, logout } = useContext(AuthContext);
+  const { isSidebarOpen, toggleSidebar } = useUtils();
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black opacity-50 z-10 lg:hidden"
+          onClick={toggleSidebar}
+        ></div>
+      )}
       <Sidebar 
         isDarkMode={isDarkMode}
         setIsDarkMode={setIsDarkMode}

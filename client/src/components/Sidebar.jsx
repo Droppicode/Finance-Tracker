@@ -9,9 +9,11 @@ import {
   Sun,
   LogOut
 } from 'lucide-react';
+import { useUtils } from '../context/UtilsContext';
 
 export default function Sidebar({ isDarkMode, setIsDarkMode, user, logout }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { isSidebarOpen } = useUtils();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -26,7 +28,7 @@ export default function Sidebar({ isDarkMode, setIsDarkMode, user, logout }) {
   ];
 
   return (
-    <nav className="w-64 h-full bg-white dark:bg-gray-800 shadow-lg flex-shrink-0 flex flex-col">
+    <nav className={`w-64 h-full bg-white dark:bg-gray-800 shadow-lg flex-shrink-0 flex flex-col fixed lg:relative z-20 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
       <div className="flex items-center justify-center h-20 border-b border-gray-200 dark:border-gray-700">
         <Banknote className="w-8 h-8 text-blue-600" />
         <span className="ml-3 text-2xl font-bold text-gray-800 dark:text-gray-100">Fin<span className="text-blue-600">Track</span></span>

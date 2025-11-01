@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthContext } from './AuthContext';
 import { getProfile, updateProfile } from '../api/profile';
@@ -15,6 +14,11 @@ export const UtilsProvider = ({ children }) => {
   const [endDate, setEndDate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(prev => !prev);
+  };
 
   useEffect(() => {
     const fetchProfileDates = async () => {
@@ -68,8 +72,9 @@ export const UtilsProvider = ({ children }) => {
     updateDates,
     loading,
     error,
+    isSidebarOpen,
+    toggleSidebar,
   };
 
   return <UtilsContext.Provider value={value}>{children}</UtilsContext.Provider>;
 };
-

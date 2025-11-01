@@ -356,7 +356,7 @@ export default function InvestimentosPage() {
           </div>
         )}
         {/* Coluna do Gráfico */}
-        <div className="lg:col-span-1">
+        <div className={assetQuote ? "lg:col-span-1" : "lg:col-span-2"}>
           <Card className="h-full">
             <div className="flex justify-between items-center mb-2">
               <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Alocação da Carteira</h2>
