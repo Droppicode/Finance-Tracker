@@ -272,8 +272,8 @@ export default function InvestimentosPage() {
         </div>
         {/* Coluna de Detalhes do Ativo */}
         {assetQuote && (
-          <div className="lg:col-span-1 relative">
-            <Card className="p-6 rounded-lg flex flex-col absolute inset-0">
+          <div className="h-[30rem] lg:h-auto lg:relative lg:col-span-1">
+            <Card className="h-full lg:absolute lg:inset-0 flex flex-col">
               <div className="overflow-y-auto flex-1 min-h-0">
                 <div className="flex items-center mb-4">
                   {assetQuote.logourl && (
