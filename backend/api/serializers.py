@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from dj_rest_auth.serializers import UserDetailsSerializer
-from .models import Transaction, Category, UserProfile, Investment
+from .models import Transaction, Category, UserProfile, Investment, OtherInvestment
 from django.urls import reverse
 
 class CustomUserDetailsSerializer(UserDetailsSerializer):
@@ -46,3 +46,9 @@ class InvestmentSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'user', 'name', 'symbol', 'quantity', 'price', 'type', 'currency', 'purchase_date', 'notes'
         )
+
+class OtherInvestmentSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')
+    class Meta:
+        model = OtherInvestment
+        fields = ('id', 'user', 'name', 'type', 'purchase_date', 'details')

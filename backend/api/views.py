@@ -6,8 +6,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status, viewsets
 from . import services
-from .models import Transaction, Category, UserProfile, Investment
-from .serializers import TransactionSerializer, CategorySerializer, UserProfileSerializer, InvestmentSerializer
+from .models import Transaction, Category, UserProfile, Investment, OtherInvestment
+from .serializers import TransactionSerializer, CategorySerializer, UserProfileSerializer, InvestmentSerializer, OtherInvestmentSerializer
 import os
 import logging
 import requests
@@ -156,6 +156,16 @@ class InvestmentQuoteView(APIView):
 class InvestmentViewSet(viewsets.ModelViewSet):
     serializer_class = InvestmentSerializer
     queryset = Investment.objects.all()
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class OtherInvestmentViewSet(viewsets.ModelViewSet):
+    serializer_class = OtherInvestmentSerializer
+    queryset = OtherInvestment.objects.all()
 
     def get_queryset(self):
         return self.queryset.filter(user=self.request.user)

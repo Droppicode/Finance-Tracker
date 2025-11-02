@@ -23,6 +23,7 @@ router = DefaultRouter()
 router.register(r'transactions', views.TransactionViewSet, basename='transaction')
 router.register(r'categories', views.CategoryViewSet, basename='category')
 router.register(r'investments', views.InvestmentViewSet, basename='investment')
+router.register(r'other-investments', views.OtherInvestmentViewSet, basename='otherinvestment')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

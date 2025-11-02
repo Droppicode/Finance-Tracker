@@ -47,3 +47,13 @@ class Investment(models.Model):
 
     def __str__(self):
         return f"{self.symbol} ({self.quantity}) @ {self.price}"
+
+class OtherInvestment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    type = models.CharField(max_length=50)
+    purchase_date = models.DateField()
+    details = models.JSONField(default=dict)
+
+    def __str__(self):
+        return f"{self.name} ({self.type})"

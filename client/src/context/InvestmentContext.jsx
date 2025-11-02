@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useContext } from 'react';
-import { getInvestments, createInvestment, updateInvestment, deleteInvestment } from '../api/investments';
+import { getInvestments, createInvestment, updateInvestment, deleteInvestment, getOtherInvestments, createOtherInvestment, deleteOtherInvestment } from '../api/investments';
 import { AuthContext } from './AuthContext';
 
 const InvestmentContext = createContext();
@@ -8,6 +8,7 @@ export const useInvestments = () => useContext(InvestmentContext);
 
 export const InvestmentProvider = ({ children }) => {
   const [investments, setInvestments] = useState([]);
+  const [otherInvestments, setOtherInvestments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { isAuthenticated } = useContext(AuthContext);
@@ -15,6 +16,7 @@ export const InvestmentProvider = ({ children }) => {
   useEffect(() => {
     if (!isAuthenticated) {
       setInvestments([]);
+      setOtherInvestments([]);
       return;
     }
     const fetchData = async () => {
@@ -22,6 +24,8 @@ export const InvestmentProvider = ({ children }) => {
       try {
         const res = await getInvestments();
         setInvestments(res.data);
+        const otherRes = await getOtherInvestments();
+        setOtherInvestments(otherRes.data);
         setError(null);
       } catch {
         setError('Erro ao carregar investimentos.');
@@ -50,6 +54,20 @@ export const InvestmentProvider = ({ children }) => {
     }
   };
 
+  const addOtherInvestment = async (investment) => {
+    try {
+      const res = await createOtherInvestment(investment);
+      setOtherInvestments(prev => [...prev, res.data]);
+      return res.data;
+    } catch (err) {
+      setError('Erro ao adicionar outro investimento.');
+      if (err.response) {
+        console.error('Other Investment API error:', err.response.data);
+      }
+      throw err;
+    }
+  };
+
   const editInvestment = async (id, updates) => {
     try {
       const res = await updateInvestment(id, updates);
@@ -72,8 +90,19 @@ export const InvestmentProvider = ({ children }) => {
     }
   };
 
+  const removeOtherInvestment = async (id) => {
+    const original = otherInvestments;
+    setOtherInvestments(prev => prev.filter(inv => inv.id !== id));
+    try {
+      await deleteOtherInvestment(id);
+    } catch {
+      setOtherInvestments(original);
+      setError('Erro ao excluir outro investimento.');
+    }
+  };
+
   return (
-    <InvestmentContext.Provider value={{ investments, loading, error, addInvestment, editInvestment, removeInvestment }}>
+    <InvestmentContext.Provider value={{ investments, otherInvestments, loading, error, addInvestment, addOtherInvestment, editInvestment, removeInvestment, removeOtherInvestment }}>
       {children}
     </InvestmentContext.Provider>
   );

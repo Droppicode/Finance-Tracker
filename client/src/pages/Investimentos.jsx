@@ -5,6 +5,8 @@ import Button from '../components/Button';
 import Select from '../components/Select';
 import Input from '../components/Input';
 import InvestmentSearchPopover from '../components/InvestmentSearchPopover';
+import OtherInvestmentForm from '../components/OtherInvestmentForm';
+import OtherInvestmentCard from '../components/OtherInvestmentCard';
 import InvestmentTypeFilter from '../components/InvestmentTypeFilter'; // New import
 import DateRangePicker from '../components/DateRangePicker';
 import { Plus, X, Trash2, ChevronDown, AreaChart, Info, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -76,7 +78,7 @@ const CustomLegend = (props) => {
 };
 
 export default function InvestimentosPage() {
-  const { investments, addInvestment, removeInvestment, loading } = useInvestments();
+  const { investments, otherInvestments, addInvestment, removeInvestment, removeOtherInvestment, loading } = useInvestments();
   const { startDate, endDate, updateDates } = useUtils();
   const [assetName, setAssetName] = useState("");
   const [assetQuantity, setAssetQuantity] = useState("");
@@ -88,6 +90,9 @@ export default function InvestimentosPage() {
   const searchPopoverRef = useRef(null);
   const [isEditingPrice, setIsEditingPrice] = useState(false);
   const [showChart, setShowChart] = useState(false);
+  const [formType, setFormType] = useState('market');
+  const [error, setError] = useState(null);
+
 
   // New states for grouping and filtering
   const [groupByAsset, setGroupByAsset] = useState(false);
@@ -104,6 +109,7 @@ export default function InvestimentosPage() {
     setAssetPrice(null);
     setAssetQuote(null);
     setIsEditingPrice(false);
+    setError(null);
     try {
       const response = await axiosInstance.get(`/api/investments/quote/?symbol=${investment.stock}`);
       setAssetPrice(response.data.regularMarketPrice);
@@ -122,7 +128,14 @@ export default function InvestimentosPage() {
     e.preventDefault();
     const quantity = parseFloat(assetQuantity);
     if (!assetName || !quantity || !assetType || assetPrice === null) {
-      console.log("Formulário incompleto ou preço não carregado");
+      let errorMessage = "Por favor, preencha todos os campos obrigatórios: ";
+      const missingFields = [];
+      if (!assetName) missingFields.push("Ativo");
+      if (!quantity) missingFields.push("Quantidade");
+      if (!assetType) missingFields.push("Tipo de Investimento");
+      if (assetPrice === null) missingFields.push("Preço (aguarde carregar)");
+      
+      setError(errorMessage + missingFields.join(', ') + '.');
       return;
     }
     // Parse asset data and round for backend
@@ -236,92 +249,104 @@ export default function InvestimentosPage() {
       {/* First Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Coluna do Formulário */}
-        <div className="h-[30rem] lg:h-[33rem] lg:col-span-1">
+        <div className="lg:col-span-1">
           <Card className="h-full">
-            <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Adicionar Investimento</h2>
-            <form onSubmit={handleAddInvestment} className="space-y-4">
-              <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ativo / Onde</label>
-                <Input
-                  placeholder="Ex: Tesouro Selic 2029, MXRF11"
-                  value={assetName}
-                  onChange={(e) => {
-                    setAssetName(e.target.value);
-                    setShowSearchPopover(true);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && searchPopoverRef.current) {
-                      e.preventDefault();
-                      searchPopoverRef.current();
-                    }
-                  }}
-                />
-                {showSearchPopover && (
-                  <InvestmentSearchPopover
-                    searchTerm={assetName}
-                    onSearchSubmit={searchPopoverRef}
-                    onSelectInvestment={handleSelectInvestment}
-                    onClose={() => setShowSearchPopover(false)}
-                  />
-                )}
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Adicionar Investimento</h2>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setFormType('market')} className={`px-3 py-1 text-sm rounded-md ${formType === 'market' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>Mercado</button>
+                <button onClick={() => setFormType('other')} className={`px-3 py-1 text-sm rounded-md ${formType === 'other' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>Outros</button>
               </div>
-              {isPriceLoading && <p className="text-sm text-gray-500 dark:text-gray-400">Carregando preço...</p>}
-              {assetPrice !== null && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preço por unidade</label>
-                  {isEditingPrice ? (
-                    <Input
-                      type="number"
-                      step="any"
-                      placeholder="0.00"
-                      value={assetPrice}
-                      onChange={(e) => setAssetPrice(e.target.value)}
-                      onBlur={() => setIsEditingPrice(false)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          e.target.closest('form').requestSubmit();
-                        }
-                      }}
-                      autoFocus
-                      disabled={isPriceLoading}
+            </div>
+            {formType === 'market' ? (
+              <form onSubmit={handleAddInvestment} className="space-y-4">
+                <div className="relative">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ativo / Onde</label>
+                  <Input
+                    placeholder="Ex: Tesouro Selic 2029, MXRF11"
+                    value={assetName}
+                    onChange={(e) => {
+                      setAssetName(e.target.value);
+                      setShowSearchPopover(true);
+                      setError(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && searchPopoverRef.current) {
+                        e.preventDefault();
+                        searchPopoverRef.current();
+                      }
+                    }}
+                  />
+                  {showSearchPopover && (
+                    <InvestmentSearchPopover
+                      searchTerm={assetName}
+                      onSearchSubmit={searchPopoverRef}
+                      onSelectInvestment={handleSelectInvestment}
+                      onClose={() => setShowSearchPopover(false)}
                     />
-                  ) : (
-                    <div
-                      className="w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 border border-gray-300 dark:border-gray-600"
-                      onClick={() => setIsEditingPrice(true)}
-                    >
-                      <p className="text-gray-900 dark:text-white">
-                        {parseFloat(assetPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      </p>
-                    </div>
                   )}
                 </div>
-              )}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantidade</label>
-                <Input
-                  type="number"
-                  step="any"
-                  placeholder="100"
-                  value={assetQuantity}
-                  onChange={(e) => setAssetQuantity(e.target.value)}
-                  disabled={assetPrice === null}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de Investimento</label>
-                <Select
-                  options={investmentOptions}
-                  value={assetType}
-                  onChange={(e) => setAssetType(e.target.value)}
-                  placeholder="Selecione o tipo..."
-                />
-              </div>
-              <Button type="submit" variant="primary" icon={Plus} className="w-full" disabled={loading}>
-                Adicionar
-              </Button>
-            </form>
+                {isPriceLoading && <p className="text-sm text-gray-500 dark:text-gray-400">Carregando preço...</p>}
+                {assetPrice !== null && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preço por unidade</label>
+                    {isEditingPrice ? (
+                      <Input
+                        type="number"
+                        step="any"
+                        placeholder="0.00"
+                        value={assetPrice}
+                        onChange={(e) => { setAssetPrice(e.target.value); setError(null); }}
+                        onBlur={() => setIsEditingPrice(false)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.target.closest('form').requestSubmit();
+                          }
+                        }}
+                        autoFocus
+                        disabled={isPriceLoading}
+                      />
+                    ) : (
+                      <div
+                        className="w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 border border-gray-300 dark:border-gray-600"
+                        onClick={() => setIsEditingPrice(true)}
+                      >
+                        <p className="text-gray-900 dark:text-white">
+                          {parseFloat(assetPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantidade</label>
+                  <Input
+                    type="number"
+                    step="any"
+                    placeholder="100"
+                    value={assetQuantity}
+                    onChange={(e) => { setAssetQuantity(e.target.value); setError(null); }}
+                    disabled={assetPrice === null}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de Investimento</label>
+                  <Select
+                    options={investmentOptions}
+                    value={assetType}
+                    onChange={(e) => { setAssetType(e.target.value); setError(null); }}
+                    placeholder="Selecione o tipo..."
+                  />
+                </div>
+                {error && <p className="text-sm text-red-500 dark:text-red-400 mt-2">{error}</p>}
+                <Button type="submit" variant="primary" icon={Plus} className="w-full" disabled={loading}>
+                  Adicionar
+                </Button>
+              </form>
+            ) : (
+              <OtherInvestmentForm />
+            )}
           </Card>
         </div>
 
@@ -644,6 +669,25 @@ export default function InvestimentosPage() {
             </Card>
           </div>
         )}
+      </div>
+
+      <div className="mt-6">
+        <Card>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Outros Investimentos</h3>
+          {otherInvestments.length === 0 ? (
+            <p className="text-gray-500 dark:text-gray-400">Nenhum outro investimento salvo.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {otherInvestments.map(inv => (
+                <OtherInvestmentCard 
+                  key={inv.id} 
+                  investment={inv} 
+                  onRemove={removeOtherInvestment} 
+                />
+              ))}
+            </div>
+          )}
+        </Card>
       </div>
     </div>
   );
