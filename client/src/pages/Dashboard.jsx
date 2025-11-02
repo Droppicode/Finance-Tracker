@@ -10,6 +10,7 @@ import Button from '../components/Button';
 import CategoryManager from '../components/CategoryManager';
 import CategoryFilter from '../components/CategoryFilter';
 import DateRangePicker from '../components/DateRangePicker';
+import EditableTableCell from '../components/EditableTableCell';
 
 import {
   Upload,
@@ -33,6 +34,7 @@ export default function DashboardPage() {
     processStatement,
     deleteTransaction,
     updateTransactionCategory,
+    updateTransactionDetails,
     addCategory,
     removeCategory,
     loading,
@@ -222,9 +224,17 @@ export default function DashboardPage() {
                               {paginatedTransactions.map((t) => (
                                 <tr key={t.id}>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{t.date}</td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{t.description}</td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                    <EditableTableCell value={t.description} onSave={(newValue) => updateTransactionDetails(t.id, { description: newValue })} />
+                                  </td>
                                   <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${t.type === 'credit' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                    {t.type === 'credit' ? '+' : '-'} {(Number(t.amount) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    <EditableTableCell 
+                                      value={t.amount} 
+                                      onSave={(newValue) => updateTransactionDetails(t.id, { amount: newValue })} 
+                                      cellType="number" 
+                                      transactionType={t.type}
+                                      onTypeChange={(newType) => updateTransactionDetails(t.id, { type: newType })}
+                                    />
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm relative" style={{ minWidth: '200px' }}>
                                     <div onClick={() => toggleCategoryEditor(t.id)} className="cursor-pointer p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">

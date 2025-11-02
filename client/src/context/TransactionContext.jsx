@@ -150,6 +150,20 @@ export const TransactionProvider = ({ children }) => {
     }
   };
 
+  const updateTransactionDetails = async (id, data) => {
+    const originalTransactions = [...transactions];
+    setTransactions(prev =>
+      prev.map(t => (t.id === id ? { ...t, ...data } : t))
+    );
+    try {
+      await updateTransaction(id, data);
+    } catch (err) {
+      console.error("Error updating transaction:", err);
+      setTransactions(originalTransactions);
+      throw err;
+    }
+  };
+
   const handleAddCategory = async (name) => {
     try {
       const response = await createCategory({ name });
@@ -186,6 +200,7 @@ export const TransactionProvider = ({ children }) => {
     processStatement: handleProcessStatement,
     deleteTransaction: handleDeleteTransaction,
     updateTransactionCategory: handleUpdateTransactionCategory,
+    updateTransactionDetails,
     addCategory: handleAddCategory,
     removeCategory: handleRemoveCategory,
   };
