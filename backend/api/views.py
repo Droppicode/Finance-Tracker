@@ -183,6 +183,24 @@ class DailyRatesView(APIView):
             logging.exception("Error fetching daily rates")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class MonthlyRatesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        series_id = request.query_params.get('series_id')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        if not all([series_id, start_date, end_date]):
+            return Response({'error': 'Parâmetros series_id, start_date e end_date são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            data = bcb_api.get_monthly_series(series_id, start_date, end_date)
+            return Response(data)
+        except Exception as e:
+            logging.exception("Error fetching monthly rates")
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class InvestmentViewSet(viewsets.ModelViewSet):
     serializer_class = InvestmentSerializer
     queryset = Investment.objects.all()

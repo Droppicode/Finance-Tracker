@@ -1,15 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useIndexes } from '../context/IndexContext';
-import { getDailyRates } from '../api/indexes';
+import { getDailyRates, getMonthlyRates } from '../api/indexes';
 import { Trash2, Calendar, Landmark, TrendingUp, Loader } from 'lucide-react';
 
-const DetailItem = ({ icon: Icon, label, value }) => (
+const DetailItem = ({ icon: IconComponent, label, value }) => (
   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-    <Icon className="w-4 h-4 text-gray-400" />
+    <IconComponent className="w-4 h-4 text-gray-400" />
     <span className="font-medium">{label}:</span>
     <span>{value}</span>
   </div>
 );
+
+const calculateBusinessDays = (startDate, endDate) => {
+  let businessDays = 0;
+  const currentDate = new Date(startDate);
+
+  while (currentDate < endDate) {
+    const dayOfWeek = currentDate.getDay();
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday
+      businessDays++;
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return businessDays;
+};
 
 const OtherInvestmentCard = ({ investment, onRemove }) => {
   const { name, type, details, purchase_date } = investment;
@@ -83,13 +98,53 @@ const OtherInvestmentCard = ({ investment, onRemove }) => {
           break;
         }
         case 'hibrido': {
-          // WRONG CALC
-          // const t = (effectiveEndDate - startDate) / (1000 * 60 * 60 * 24 * 365.25); // Time in years
-          // if (indexes && indexes[details.indexer]) {
-          //   const inflation_rate = parseFloat(indexes[details.indexer]) / 100;
-          //   const spread_rate = parseFloat(details.spread_rate) / 100;
-          //   setCurrentValue(P * Math.pow(1 + inflation_rate, t) * Math.pow(1 + spread_rate, t));
-          // }
+          if (details.indexer && details.spread_rate) {
+            const seriesId = details.indexer === 'IPCA' ? 433 : 189; // 433 for IPCA, 189 for IGP-M
+            setIsLoading(true);
+            try {
+              // 1. Fetch monthly inflation data
+              const monthlyRates = await getMonthlyRates(seriesId, details.start_date, effectiveEndDate);
+
+              console.log(details.indexer, " ", monthlyRates)
+
+              // 2. Calculate inflation factor              
+              let inflation_factor = 1;
+              if (monthlyRates && monthlyRates.length > 0) {
+                
+                // 1. FILTRAR: Pega apenas taxas publicadas DEPOIS do início do investimento
+                const applicableRates = monthlyRates.filter(rate => {
+                  const [day, month, year] = rate.data.split('/');
+                  const inflationDate = new Date(year, month - 1, day)
+                  return inflationDate > startDate;
+                });
+
+                // 2. REDUZIR: Calcula o fator apenas com as taxas aplicáveis
+                if (applicableRates.length > 0) {
+                  inflation_factor = applicableRates.reduce((acc, rate) => {
+                    return acc * (1 + parseFloat(rate.valor) / 100);
+                  }, 1);
+                }
+              }
+
+              // 3. Calculate fixed rate factor
+              const business_days = calculateBusinessDays(startDate, effectiveEndDate);
+              const t_util = business_days / 252;
+              const spread_rate = parseFloat(details.spread_rate) / 100;
+              const fixed_factor = Math.pow(1 + spread_rate, t_util);
+
+              console.log(details.indexer, " ", inflation_factor, " ", fixed_factor)
+
+              // 4. Calculate final value
+              const currentValue = P * inflation_factor * fixed_factor;
+              setCurrentValue(currentValue);
+
+            } catch (error) {
+              console.error('Failed to calculate hibrido value', error);
+              setCurrentValue(null);
+            } finally {
+              setIsLoading(false);
+            }
+          }
           break;
         }
         default:

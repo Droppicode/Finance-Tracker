@@ -34,6 +34,7 @@ urlpatterns = [
     path('api/investments/quote/', views.InvestmentQuoteView.as_view(), name='investment_quote'),
     path('api/indexes/', views.IndexDataView.as_view(), name='index-data'),
     path('api/daily-rates/', views.DailyRatesView.as_view(), name='daily-rates'),
+    path('api/monthly-rates/', views.MonthlyRatesView.as_view(), name='monthly-rates'),
     path('api/', include(router.urls)),
     path('auth/', include('dj_rest_auth.urls')),
     path('auth/registration/', include('dj_rest_auth.registration.urls')),
