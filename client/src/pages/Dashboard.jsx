@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { useTransactions } from '../context/TransactionContext';
@@ -50,6 +50,8 @@ export default function DashboardPage() {
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
   const [editingCategoryId, setEditingCategoryId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   const onDrop = useCallback(acceptedFiles => {
     setUploadedFile(acceptedFiles[0]);
@@ -104,6 +106,12 @@ export default function DashboardPage() {
       setEditingCategoryId(id);
     }
   };
+
+  const paginatedTransactions = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return transactions.slice(startIndex, endIndex);
+  }, [transactions, currentPage]);
 
   return (
     <div>
@@ -210,38 +218,60 @@ export default function DashboardPage() {
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {transactions.map((t) => (
-                  <tr key={t.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{t.date}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{t.description}</td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${t.type === 'credit' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {t.type === 'credit' ? '+' : '-'} {(Number(t.amount) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm relative" style={{ minWidth: '200px' }}>
-                      <div onClick={() => toggleCategoryEditor(t.id)} className="cursor-pointer p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        {t.category?.name || 'Selecione uma categoria...'}
-                      </div>
-                      {editingCategoryId === t.id && (
-                        <CategoryManager 
-                          categories={categories.map(c => ({ value: c.id, label: c.name }))}
-                          onSelectCategory={(category) => handleCategoryChange(t.id, category)}
-                          onAddCategory={addCategory}
-                          onRemoveCategory={removeCategory}
-                        />
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                      <button onClick={() => deleteTransaction(t.id)} className="text-gray-400 hover:text-red-500 dark:hover:text-red-400">
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                              {paginatedTransactions.map((t) => (
+                                <tr key={t.id}>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{t.date}</td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{t.description}</td>
+                                  <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${t.type === 'credit' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                    {t.type === 'credit' ? '+' : '-'} {(Number(t.amount) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm relative" style={{ minWidth: '200px' }}>
+                                    <div onClick={() => toggleCategoryEditor(t.id)} className="cursor-pointer p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                      {t.category?.name || 'Selecione uma categoria...'}
+                                    </div>
+                                    {editingCategoryId === t.id && (
+                                      <CategoryManager 
+                                        categories={categories.map(c => ({ value: c.id, label: c.name }))}
+                                        onSelectCategory={(category) => handleCategoryChange(t.id, category)}
+                                        onAddCategory={addCategory}
+                                        onRemoveCategory={removeCategory}
+                                      />
+                                    )}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                                    <button onClick={() => deleteTransaction(t.id)} className="text-gray-400 hover:text-red-500 dark:hover:text-red-400">
+                                      <Trash2 className="w-5 h-5" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          {transactions.length > itemsPerPage && (
+                            <div className="flex justify-center items-center mt-4">
+                              <Button
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                variant="ghost"
+                                size="icon"
+                              >
+                                <ChevronLeft className="w-5 h-5" />
+                              </Button>
+                              <span className="text-sm text-gray-600 dark:text-gray-300 mx-4">
+                                Página {currentPage} de {Math.ceil(transactions.length / itemsPerPage)}
+                              </span>
+                              <Button
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(transactions.length / itemsPerPage)))}
+                                disabled={currentPage === Math.ceil(transactions.length / itemsPerPage)}
+                                variant="ghost"
+                                size="icon"
+                              >
+                                <ChevronRight className="w-5 h-5" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>        </Card>
       )}
     </div>
   );

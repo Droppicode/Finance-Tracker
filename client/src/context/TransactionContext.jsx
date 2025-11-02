@@ -113,9 +113,10 @@ export const TransactionProvider = ({ children }) => {
 
   const handleProcessStatement = async (file) => {
     try {
-      const response = await processStatement(file);
-      const newTransactions = response.data;
-      setTransactions(prev => [...prev, ...newTransactions].sort((a, b) => new Date(b.date) - new Date(a.date)));
+      const newTransactions = await processStatement(file);
+      if (newTransactions) {
+        setTransactions(prev => [...prev, ...newTransactions].sort((a, b) => new Date(b.date) - new Date(a.date)));
+      }
       const categoriesRes = await getCategories();
       setCategories(categoriesRes.data);
     } catch (err) {

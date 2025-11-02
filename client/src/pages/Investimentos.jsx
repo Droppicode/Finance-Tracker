@@ -7,7 +7,7 @@ import Input from '../components/Input';
 import InvestmentSearchPopover from '../components/InvestmentSearchPopover';
 import InvestmentTypeFilter from '../components/InvestmentTypeFilter'; // New import
 import DateRangePicker from '../components/DateRangePicker';
-import { Plus, X, Trash2, ChevronDown, AreaChart, Info } from 'lucide-react';
+import { Plus, X, Trash2, ChevronDown, AreaChart, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import ToggleSwitch from '../components/ToggleSwitch';
 import AssetChart from '../components/AssetChart';
 import {
@@ -93,6 +93,8 @@ export default function InvestimentosPage() {
   const [groupByAsset, setGroupByAsset] = useState(false);
   const [filterType, setFilterType] = useState([]); // Changed to array
   const [expandedGroups, setExpandedGroups] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   // Busca preço (cotação) pelo backend, autenticado
   const handleSelectInvestment = async (investment) => {
@@ -202,6 +204,12 @@ export default function InvestimentosPage() {
 
     return filtered;
   }, [investments, groupByAsset, filterType, startDate, endDate]);
+
+  const paginatedInvestments = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return processedInvestments.slice(startIndex, endIndex);
+  }, [processedInvestments, currentPage]);
 
   // Dados para gráfico - agrupa por type salvo
   const chartData = useMemo(() => {
@@ -484,7 +492,7 @@ export default function InvestimentosPage() {
                   <p className="text-gray-500 dark:text-gray-400">Nenhum investimento salvo ainda.</p>
                 ) : (
                   <div className="space-y-2 mt-4">
-                    {processedInvestments.map(inv => {
+                    {paginatedInvestments.map(inv => {
                       const isGrouped = groupByAsset && inv.originalIds?.length > 1;
                       const isExpanded = expandedGroups.includes(inv.id);
 
@@ -569,6 +577,29 @@ export default function InvestimentosPage() {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+                 {processedInvestments.length > itemsPerPage && (
+                  <div className="flex justify-center items-center mt-4">
+                    <Button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      variant="ghost"
+                      size="icon"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </Button>
+                    <span className="text-sm text-gray-600 dark:text-gray-300 mx-4">
+                      Página {currentPage} de {Math.ceil(processedInvestments.length / itemsPerPage)}
+                    </span>
+                    <Button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(processedInvestments.length / itemsPerPage)))}
+                      disabled={currentPage === Math.ceil(processedInvestments.length / itemsPerPage)}
+                      variant="ghost"
+                      size="icon"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </Button>
                   </div>
                 )}
               </div>
