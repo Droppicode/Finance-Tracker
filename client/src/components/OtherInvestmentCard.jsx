@@ -3,9 +3,9 @@ import { useIndexes } from '../context/IndexContext';
 import { getDailyRates } from '../api/indexes';
 import { Trash2, Calendar, Landmark, TrendingUp, Loader } from 'lucide-react';
 
-const DetailItem = ({ icon: IconComponent, label, value }) => (
+const DetailItem = ({ icon: Icon, label, value }) => (
   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-    <IconComponent className="w-4 h-4 text-gray-400" />
+    <Icon className="w-4 h-4 text-gray-400" />
     <span className="font-medium">{label}:</span>
     <span>{value}</span>
   </div>
@@ -20,12 +20,18 @@ const OtherInvestmentCard = ({ investment, onRemove }) => {
   useEffect(() => {
     const calculateCurrentValue = async () => {
       const P = parseFloat(details.invested_amount);
-      const startDate = new Date(details.start_date);
+      const startDate = new Date(details.start_date + 'T23:59:59');
       const today = new Date();
-      const t = (today - startDate) / (1000 * 60 * 60 * 24 * 365.25); // Time in years
+      
+      // Determine the effective end date for compounding
+      const endDate = details.due_date ? new Date(details.due_date + 'T23:59:59') : today;
+      const effectiveEndDate = new Date(Math.min(today.getTime(), endDate.getTime()));
+
+      if(effectiveEndDate <= startDate) return;
 
       switch (details.yield_type) {
         case 'prefixado': {
+          const t = (effectiveEndDate - startDate) / (1000 * 60 * 60 * 24 * 365.25); // Time in years
           const r = parseFloat(details.rate) / 100;
           setCurrentValue(P * Math.pow(1 + r, t));
           break;
@@ -37,11 +43,35 @@ const OtherInvestmentCard = ({ investment, onRemove }) => {
             try {
               const dailyRates = await getDailyRates(seriesId, details.start_date, new Date());
               let value = P;
-              dailyRates.forEach(rate => {
-                const dailyRate = parseFloat(rate.valor) / 100;
-                const investmentRate = dailyRate * (parseFloat(details.indexer_percentage) / 100);
-                value = value * (1 + investmentRate);
-              });
+              let lastRate = 0;
+
+              const ratesMap = new Map(dailyRates.map(rate => {
+                const [day, month, year] = rate.data.split('/');
+                return [`${year}-${month}-${day}`, parseFloat(rate.valor)];
+              }));
+
+              // Find the last rate before or on the startDate
+              for (let i = dailyRates.length - 1; i >= 0; i--) {
+                const rateDate = new Date(dailyRates[i].data.split('/').reverse().join('-'));
+                if (rateDate <= startDate) {
+                  lastRate = parseFloat(dailyRates[i].valor) / 100;
+                  break;
+                }
+              }
+
+              for (let d = new Date(startDate); d <= effectiveEndDate; d.setDate(d.getDate() + 1)) {
+                const dateString = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                
+                if (ratesMap.has(dateString)) {
+                  lastRate = ratesMap.get(dateString) / 100;
+                }
+
+                if (lastRate > 0) {
+                  const investmentRate = lastRate * (parseFloat(details.indexer_percentage) / 100);
+                  value = value * (1 + investmentRate);
+                }
+              }
+
               setCurrentValue(value);
             } catch (error) {
               console.error('Failed to calculate posfixado value', error);
@@ -53,11 +83,13 @@ const OtherInvestmentCard = ({ investment, onRemove }) => {
           break;
         }
         case 'hibrido': {
-          if (indexes && indexes[details.indexer]) {
-            const inflation_rate = parseFloat(indexes[details.indexer]) / 100;
-            const spread_rate = parseFloat(details.spread_rate) / 100;
-            setCurrentValue(P * Math.pow(1 + inflation_rate, t) * Math.pow(1 + spread_rate, t));
-          }
+          // WRONG CALC
+          // const t = (effectiveEndDate - startDate) / (1000 * 60 * 60 * 24 * 365.25); // Time in years
+          // if (indexes && indexes[details.indexer]) {
+          //   const inflation_rate = parseFloat(indexes[details.indexer]) / 100;
+          //   const spread_rate = parseFloat(details.spread_rate) / 100;
+          //   setCurrentValue(P * Math.pow(1 + inflation_rate, t) * Math.pow(1 + spread_rate, t));
+          // }
           break;
         }
         default:

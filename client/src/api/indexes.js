@@ -19,14 +19,12 @@ export const getDailyRates = async (seriesId, startDate, endDate) => {
     return `${day}/${month}/${year}`;
   };
 
-  const url = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.${seriesId}/dados`;
-  
   try {
-    const response = await axiosInstance.get(url, {
+    const response = await axiosInstance.get('/api/daily-rates/', {
       params: {
-        formato: 'json',
-        dataInicial: formatDate(startDate),
-        dataFinal: formatDate(endDate),
+        series_id: seriesId,
+        start_date: formatDate(startDate),
+        end_date: formatDate(endDate),
       },
     });
     return response.data;

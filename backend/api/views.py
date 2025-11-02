@@ -153,14 +153,10 @@ class IndexDataView(APIView):
 
     def get(self, request, *args, **kwargs):
         try:
-            cdi_data = bcb_api.get_cdi()
-            selic_data = bcb_api.get_selic()
             ipca_data = bcb_api.get_ipca()
             igpm_data = bcb_api.get_igpm()
 
             data = {
-                'CDI': cdi_data,
-                'SELIC': selic_data,
                 'IPCA': ipca_data,
                 'IGPM': igpm_data,
             }
@@ -168,6 +164,24 @@ class IndexDataView(APIView):
         except Exception as e:
             logging.exception("Error fetching index data")
             return Response({"error": str(e)}, status=500)
+
+class DailyRatesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        series_id = request.query_params.get('series_id')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        if not all([series_id, start_date, end_date]):
+            return Response({'error': 'Parâmetros series_id, start_date e end_date são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            data = bcb_api.get_daily_series(series_id, start_date, end_date)
+            return Response(data)
+        except Exception as e:
+            logging.exception("Error fetching daily rates")
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class InvestmentViewSet(viewsets.ModelViewSet):
     serializer_class = InvestmentSerializer
