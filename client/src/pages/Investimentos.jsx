@@ -31,7 +31,49 @@ const investmentOptions = [
 const labelFromType = (type) => investmentOptions.find(o => o.value === type)?.label || 'Outros';
 
 // Cores para os gráficos
-const COLORS_INVESTMENTS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+const COLORS_INVESTMENTS = ["#4f46e5", "#60a5fa", "#fbbf24", "#f87171", "#a78bfa", "#22d3ee", "#34d399"];
+
+const CustomTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+        <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{data.name}</p>
+        <p className="text-sm text-indigo-600 dark:text-indigo-400">
+          Valor: {data.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
+const RADIAN = Math.PI / 180;
+const CustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+};
+
+const CustomLegend = (props) => {
+  const { payload } = props;
+  return (
+    <ul className="flex flex-wrap justify-center gap-4 mt-4">
+      {payload.map((entry, index) => (
+        <li key={`item-${index}`} className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></span>
+          <span className="text-sm text-gray-600 dark:text-gray-300">{entry.value}</span>
+        </li>
+      ))}
+    </ul>
+  );
+};
 
 export default function InvestimentosPage() {
   const { investments, addInvestment, removeInvestment, loading } = useInvestments();
@@ -399,8 +441,8 @@ export default function InvestimentosPage() {
                         <Cell key={`cell-${index}`} fill={COLORS_INVESTMENTS[index % COLORS_INVESTMENTS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} />
-                    <Legend wrapperStyle={{ color: 'var(--legend-text, #374151)' }} className="dark:[--legend-text:#d1d5db]" />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend content={<CustomLegend />} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -563,8 +605,8 @@ export default function InvestimentosPage() {
                         <Cell key={`cell-${index}`} fill={COLORS_INVESTMENTS[index % COLORS_INVESTMENTS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} />
-                    <Legend wrapperStyle={{ color: 'var(--legend-text, #374151)' }} className="dark:[--legend-text:#d1d5db]" />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend content={<CustomLegend />} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>

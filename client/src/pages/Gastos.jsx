@@ -14,8 +14,23 @@ import {
   YAxis,
   Tooltip,
   Legend,
-  ResponsiveContainer
+  ResponsiveContainer,
+  CartesianGrid
 } from 'recharts';
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+        <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{label}</p>
+        <p className="text-sm text-indigo-600 dark:text-indigo-400">
+          Gasto: {payload[0].value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
 
 export default function GastosPage() {
   const { 
@@ -80,8 +95,8 @@ export default function GastosPage() {
               onEndDateChange={(newEndDate) => updateDates(startDate, newEndDate)}
             />
         </Card>
-        <Card className="bg-blue-600 text-white">
-          <h3 className="text-sm font-medium text-blue-200">Total Gasto (Período)</h3>
+        <Card className="bg-indigo-600 text-white">
+          <h3 className="text-sm font-medium text-indigo-200">Total Gasto (Período)</h3>
           <p className="text-3xl font-bold">
             {totalSpent.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
           </p>
@@ -95,20 +110,31 @@ export default function GastosPage() {
           <ResponsiveContainer>
             <BarChart
               data={spendingData}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
             >
-              <XAxis dataKey="name" stroke="#9ca3af" />
-              <YAxis stroke="#9ca3af" tickFormatter={(value) => `R$${value}`} />
-              <Tooltip
-                formatter={(value) =>
-                  Number(value).toLocaleString('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                  })
-                }
+              <defs>
+                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#6066cd" stopOpacity={0.8}/>
+                </linearGradient>
+              </defs>
+              <XAxis 
+                dataKey="name" 
+                stroke="rgb(107 114 128)"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
               />
-              <Legend wrapperStyle={{ color: 'var(--legend-text, #374151)' }} className="dark:[--legend-text:#d1d5db]" />
-              <Bar dataKey="value" name="Gasto" fill="#0088FE" radius={[4, 4, 0, 0]} />
+              <YAxis 
+                stroke="rgb(107 114 128)"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `R$${value}`}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{fill: 'transparent'}}/>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+              <Bar dataKey="value" name="Gasto" fill="url(#colorValue)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
