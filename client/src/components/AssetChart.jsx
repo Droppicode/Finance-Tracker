@@ -100,7 +100,7 @@ const AssetChart = ({ symbol }) => {
             />
             <CartesianGrid strokeDasharray="3 3" />
             <Tooltip content={<CustomTooltip />} />
-            <Area type="monotone" dataKey="price" stroke="#8884d8" fillOpacity={1} fill="url(#colorPrice)" />
+            <Area type="linear" dataKey="price" stroke="#8884d8" fillOpacity={1} fill="url(#colorPrice)" />
           </AreaChart>
         </ResponsiveContainer>
       </div>

@@ -31,7 +31,7 @@ const investmentOptions = [
 const labelFromType = (type) => investmentOptions.find(o => o.value === type)?.label || 'Outros';
 
 // Cores para os gráficos
-const COLORS_INVESTMENTS = ["#4f46e5", "#60a5fa", "#fbbf24", "#f87171", "#a78bfa", "#22d3ee", "#34d399"];
+const COLORS_INVESTMENTS = ['#3b82f6', '#14b8a6', '#6366f1', '#22c55e', '#818cf8', '#06b6d4', '#a3e635'];
 
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
@@ -126,20 +126,20 @@ export default function InvestimentosPage() {
       return;
     }
     // Parse asset data and round for backend
-    const [symbol, ...rest] = assetName.split(' - ');
-    const name = rest.join(' - ');
+      const [symbol, ...rest] = assetName.split(' - ');
+      const name = rest.join(' - ');
     const formattedPrice = parseFloat(assetPrice).toFixed(5);
     const formattedQuantity = parseFloat(assetQuantity).toFixed(5);
 
     await addInvestment({
-      name: name || symbol,
-      symbol: symbol,
-      quantity: formattedQuantity,
-      price: formattedPrice,
-      currency: 'BRL',
-      notes: '',
-      purchase_date: new Date().toISOString().slice(0, 10),
-      type: assetType,
+        name: name || symbol,
+        symbol: symbol,
+        quantity: formattedQuantity,
+        price: formattedPrice,
+        currency: 'BRL',
+        notes: '',
+        purchase_date: new Date().toISOString().slice(0, 10),
+        type: assetType,
     });
 
     setAssetName('');
@@ -508,7 +508,7 @@ export default function InvestimentosPage() {
                           >
                             <div className="flex items-center gap-4 grow">
                               {isGrouped && (
-                                <ChevronDown className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                <ChevronDown className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                               )}
                               <div>
                                 <span className="font-bold text-gray-800 dark:text-gray-100">{inv.symbol}</span>

@@ -114,8 +114,8 @@ export default function GastosPage() {
             >
               <defs>
                 <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="#6066cd" stopOpacity={0.8}/>
+                  <stop offset="5%" stopColor="#60619c" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#60619c" stopOpacity={0.3}/>
                 </linearGradient>
               </defs>
               <XAxis 

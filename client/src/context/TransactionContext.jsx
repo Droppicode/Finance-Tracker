@@ -1,7 +1,7 @@
 import { createContext, useState, useEffect, useContext, useMemo } from 'react';
 import { AuthContext } from './AuthContext';
 import { useUtils } from './UtilsContext';
-import { getTransactions, updateTransaction, deleteTransaction } from '../api/transactions';
+import { getTransactions, createTransaction, updateTransaction, deleteTransaction } from '../api/transactions';
 import { getCategories, createCategory, deleteCategory } from '../api/categories';
 import { processStatement } from '../api/statement';
 import { getProfile, updateProfile } from '../api/profile';
@@ -125,6 +125,18 @@ export const TransactionProvider = ({ children }) => {
     }
   };
 
+  const handleAddTransaction = async (transactionData) => {
+    try {
+      const response = await createTransaction(transactionData);
+      const newTransaction = response.data;
+      setTransactions(prev => [...prev, newTransaction].sort((a, b) => new Date(b.date) - new Date(a.date)));
+      return newTransaction;
+    } catch (err) {
+      console.error("Error adding transaction:", err);
+      throw err;
+    }
+  };
+
   const handleDeleteTransaction = async (id) => {
     const originalTransactions = [...transactions];
     setTransactions(prev => prev.filter(t => t.id !== id));
@@ -198,6 +210,7 @@ export const TransactionProvider = ({ children }) => {
     selectedCategoryIds,
     toggleCategoryFilter,
     processStatement: handleProcessStatement,
+    addTransaction: handleAddTransaction,
     deleteTransaction: handleDeleteTransaction,
     updateTransactionCategory: handleUpdateTransactionCategory,
     updateTransactionDetails,

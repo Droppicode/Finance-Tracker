@@ -11,6 +11,7 @@ import CategoryManager from '../components/CategoryManager';
 import CategoryFilter from '../components/CategoryFilter';
 import DateRangePicker from '../components/DateRangePicker';
 import EditableTableCell from '../components/EditableTableCell';
+import AddTransactionForm from '../components/AddTransactionForm';
 
 import {
   Upload,
@@ -18,7 +19,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ZoomIn,
-  ZoomOut
+  ZoomOut,
+  ChevronDown
 } from 'lucide-react';
 
 // Configure o worker do PDF.js
@@ -120,72 +122,80 @@ export default function DashboardPage() {
       <Header title="Dashboard" />
       
       <Card className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Upload de Extrato (PDF)</h2>
-        <div {...getRootProps()} className={`flex flex-col items-center justify-center w-full p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition-colors ${isDragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''}`}>
-          <input {...getInputProps()} />
-          <Upload className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
-          {isDragActive ?
-            <p className="text-gray-600 dark:text-gray-200">Solte o arquivo aqui...</p> :
-            <p className="text-gray-600 dark:text-gray-200">Arraste e solte o PDF aqui ou clique para selecionar</p>
-          }
-        </div>
-        {uploadedFile && (
-          <div className="mt-4 space-y-4">
-            <div className="flex justify-between items-center">
-              <p className="text-sm text-gray-600 dark:text-gray-300">Arquivo: {uploadedFile.name}</p>
-              <div className="flex items-center space-x-2">
-                <Button onClick={() => setIsPreviewOpen(!isPreviewOpen)} variant="secondary">
-                  {isPreviewOpen ? 'Fechar Preview' : 'Abrir Preview'}
-                </Button>
-                <Button onClick={handleUpload} variant="primary" disabled={isProcessing}>
-                  {isProcessing ? 'Processando...' : 'Processar Arquivo'}
-                </Button>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:divide-x md:divide-gray-200 dark:md:divide-gray-700">
+          {/* Coluna de Upload */}
+          <div className="md:pr-8">
+            <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Upload de Extrato (PDF)</h2>
+            <div {...getRootProps()} className={`flex flex-col items-center justify-center w-full p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition-colors ${isDragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''}`}>
+              <input {...getInputProps()} />
+              <Upload className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
+              {isDragActive ?
+                <p className="text-gray-600 dark:text-gray-200">Solte o arquivo aqui...</p> :
+                <p className="text-gray-600 dark:text-gray-200">Arraste e solte o PDF aqui ou clique para selecionar</p>
+              }
             </div>
-            {error && (
-              <div className="mt-4 text-red-500 dark:text-red-400">
-                {error}
-              </div>
-            )}
-            {isPreviewOpen && (
-              <div className="border rounded-lg p-4 bg-gray-200 dark:bg-gray-900">
-                <div className="max-h-96 overflow-y-auto mb-4">
-                  <Document
-                    file={uploadedFile}
-                    onLoadSuccess={onDocumentLoadSuccess}
-                    className="flex justify-center"
-                  >
-                    <Page pageNumber={pageNumber} scale={scale} className="pdf-page" renderTextLayer={false} renderAnnotationLayer={false} />
-                  </Document>
-                </div>
+            {uploadedFile && (
+              <div className="mt-4 space-y-4">
                 <div className="flex justify-between items-center">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">Arquivo: {uploadedFile.name}</p>
                   <div className="flex items-center space-x-2">
-                    <Button onClick={zoomOut} variant="secondary">
-                      <ZoomOut className="w-5 h-5" />
+                    <Button onClick={() => setIsPreviewOpen(!isPreviewOpen)} variant="secondary">
+                      {isPreviewOpen ? 'Fechar Preview' : 'Abrir Preview'}
                     </Button>
-                    <span className="text-sm text-gray-600 dark:text-gray-300">{(scale * 100).toFixed(0)}%</span>
-                    <Button onClick={zoomIn} variant="secondary">
-                      <ZoomIn className="w-5 h-5" />
-                    </Button>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <Button onClick={goToPrevPage} disabled={pageNumber <= 1} variant="secondary">
-                      <ChevronLeft className="w-5 h-5 mr-1" />
-                      Anterior
-                    </Button>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      Página {pageNumber} de {numPages}
-                    </p>
-                    <Button onClick={goToNextPage} disabled={pageNumber >= numPages} variant="secondary">
-                      Próxima
-                      <ChevronRight className="w-5 h-5 ml-1" />
+                    <Button onClick={handleUpload} variant="primary" disabled={isProcessing}>
+                      {isProcessing ? 'Processando...' : 'Processar Arquivo'}
                     </Button>
                   </div>
                 </div>
+                {error && (
+                  <div className="mt-4 text-red-500 dark:text-red-400">
+                    {error}
+                  </div>
+                )}
+                {isPreviewOpen && (
+                  <div className="border rounded-lg p-4 bg-gray-200 dark:bg-gray-900">
+                    <div className="max-h-96 overflow-y-auto mb-4">
+                      <Document
+                        file={uploadedFile}
+                        onLoadSuccess={onDocumentLoadSuccess}
+                        className="flex justify-center"
+                      >
+                        <Page pageNumber={pageNumber} scale={scale} className="pdf-page" renderTextLayer={false} renderAnnotationLayer={false} />
+                      </Document>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-2">
+                        <Button onClick={zoomOut} variant="secondary">
+                          <ZoomOut className="w-5 h-5" />
+                        </Button>
+                        <span className="text-sm text-gray-600 dark:text-gray-300">{(scale * 100).toFixed(0)}%</span>
+                        <Button onClick={zoomIn} variant="secondary">
+                          <ZoomIn className="w-5 h-5" />
+                        </Button>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <Button onClick={goToPrevPage} disabled={pageNumber <= 1} variant="ghost" size="icon">
+                          <ChevronLeft className="w-5 h-5" />
+                        </Button>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                          Página {pageNumber} de {numPages}
+                        </p>
+                        <Button onClick={goToNextPage} disabled={pageNumber >= numPages} variant="ghost" size="icon">
+                          <ChevronRight className="w-5 h-5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
-        )}
+
+          {/* Coluna do Formulário */}
+          <div className="md:pl-8">
+            <AddTransactionForm />
+          </div>
+        </div>
       </Card>
 
       {loading ? (
@@ -237,8 +247,12 @@ export default function DashboardPage() {
                                     />
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm relative" style={{ minWidth: '200px' }}>
-                                    <div onClick={() => toggleCategoryEditor(t.id)} className="cursor-pointer p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                                      {t.category?.name || 'Selecione uma categoria...'}
+                                    <div
+                                      onClick={() => toggleCategoryEditor(t.id)}
+                                      className="flex items-center justify-between cursor-pointer p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                                    >
+                                      <span>{t.category?.name || 'Selecione uma categoria...'}</span>
+                                      <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                                     </div>
                                     {editingCategoryId === t.id && (
                                       <CategoryManager 

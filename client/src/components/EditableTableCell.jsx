@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 export default function EditableTableCell({ value, onSave, cellType = 'text', options = [], transactionType, onTypeChange }) {
   const [isEditing, setIsEditing] = useState(false);
   const [currentValue, setCurrentValue] = useState(value);
+  const [isHoveringType, setIsHoveringType] = useState(false);
 
   useEffect(() => {
     setCurrentValue(value);
@@ -70,15 +71,27 @@ export default function EditableTableCell({ value, onSave, cellType = 'text', op
         onKeyDown={handleKeyDown}
         onBlur={handleBlur}
         autoFocus
-        className="w-full px-2 py-1 border rounded-md bg-gray-100 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-2 py-1 border rounded-md bg-gray-100 dark:bg-gray-700 focus:outline-none"
       />
     );
   }
 
   return (
-    <div onClick={() => setIsEditing(true)} className="cursor-pointer w-full h-full flex items-center">
+    <div
+      onClick={() => setIsEditing(true)}
+      className="cursor-pointer w-full h-full flex items-center p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+    >
       {transactionType && (
-        <span onClick={handleTypeClick} className="mr-2 font-bold cursor-pointer">
+        <span
+          onClick={handleTypeClick}
+          onMouseEnter={() => setIsHoveringType(true)}
+          onMouseLeave={() => setIsHoveringType(false)}
+          className={`mr-2 font-bold cursor-pointer ${
+            transactionType === 'credit'
+              ? (isHoveringType ? 'text-red-500' : 'text-green-600 dark:text-green-400')
+              : (isHoveringType ? 'text-green-500' : 'text-red-600 dark:text-red-400')
+          }`}
+        >
           {transactionType === 'credit' ? '+' : '-'}
         </span>
       )}
