@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status, viewsets
+from rest_framework.permissions import IsAuthenticated
 from . import services
 from .models import Transaction, Category, UserProfile, Investment, OtherInvestment
 from .serializers import TransactionSerializer, CategorySerializer, UserProfileSerializer, InvestmentSerializer, OtherInvestmentSerializer
@@ -13,6 +14,8 @@ import logging
 import requests
 from django.http import HttpResponse
 from datetime import date, timedelta
+from . import brapi_api
+from . import bcb_api
 
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
@@ -21,6 +24,7 @@ class GoogleLogin(SocialLoginView):
 
 class ProcessStatementView(APIView):
     parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         if 'statement' not in request.data:
@@ -34,14 +38,11 @@ class ProcessStatementView(APIView):
 
             created_transactions = []
             for t_data in extracted_transactions:
-                # Find or create the category
                 category_name = t_data.pop('category', None)
                 category = None
                 if category_name:
                     category, _ = Category.objects.get_or_create(user=request.user, name=category_name)
 
-                # Prepare data for get_or_create
-                # The unique key for a transaction, description is removed to avoid issues with AI variations
                 lookup_fields = {
                     'user': request.user,
                     'date': t_data.get('date'),
@@ -49,20 +50,17 @@ class ProcessStatementView(APIView):
                     'type': t_data.get('type'),
                 }
 
-                # Fields to be set only on creation, including the description
                 defaults = {
                     'description': t_data.get('description'),
                     'category': category
                 }
 
-                # Use get_or_create to avoid duplicates
                 transaction, created = Transaction.objects.get_or_create(
                     **lookup_fields,
                     defaults=defaults
                 )
 
                 if created:
-                    # Serialize and add to the list of newly created transactions
                     serializer = TransactionSerializer(transaction)
                     created_transactions.append(serializer.data)
 
@@ -74,18 +72,18 @@ class ProcessStatementView(APIView):
 class TransactionViewSet(viewsets.ModelViewSet):
     serializer_class = TransactionSerializer
     queryset = Transaction.objects.all()
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Filtra para retornar apenas as transações do usuário logado
         return self.queryset.filter(user=self.request.user).order_by('-date')
 
     def perform_create(self, serializer):
-        # Ação customizada ao criar, linka ao usuário
         serializer.save(user=self.request.user)
 
 class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     queryset = Category.objects.all()
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return self.queryset.filter(user=self.request.user)
@@ -94,11 +92,12 @@ class CategoryViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, *args, **kwargs):
         profile, created = UserProfile.objects.get_or_create(user=request.user)
         
         today = date.today()
-        # if created or not profile.last_login or profile.last_login < today:
         if created or not profile.last_login or profile.last_login < today:
             profile.last_login = today
             profile.end_date = today
@@ -116,9 +115,9 @@ class UserProfileView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-from . import brapi_api
-
 class InvestmentSearchView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, *args, **kwargs):
         symbol = request.query_params.get('symbol')
         if not symbol:
@@ -127,35 +126,53 @@ class InvestmentSearchView(APIView):
         try:
             results = brapi_api.search_symbol(symbol)
             return Response(results.get('stocks', []), status=status.HTTP_200_OK)
-        except ValueError as e:
-            logging.exception("Value Error processing statement")
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
             logging.exception("Error searching investment symbol")
             return Response({'error': 'Erro ao buscar símbolo de investimento.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class InvestmentQuoteView(APIView):
-    def get(self, request, *args, **kwargs):
-        symbol = request.query_params.get('symbol')
-        range_param = request.query_params.get('range', '1mo')
-        interval_param = request.query_params.get('interval', '1d')
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request, *args, **kwargs):
+        symbol = request.query_params.get('symbol', None)
         if not symbol:
-            return Response({'error': 'Parâmetro "symbol" é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Símbolo não fornecido"}, status=400)
         
+        symbol_without_suffix = symbol.replace('.SA', '')
+
         try:
-            results = brapi_api.get_quote(symbol, range=range_param, interval=interval_param)
-            return Response(results.get('results', [{}])[0], status=status.HTTP_200_OK)
-        except ValueError as e:
-            logging.exception("Value Error processing statement")
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            data = brapi_api.get_quote(symbol_without_suffix)
+            quote_data = data.get('results', [{}])[0]
+            return Response(quote_data)
         except Exception as e:
             logging.exception("Error getting investment quote")
             return Response({'error': 'Erro ao buscar cotação do investimento.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class IndexDataView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        try:
+            cdi_data = bcb_api.get_cdi()
+            selic_data = bcb_api.get_selic()
+            ipca_data = bcb_api.get_ipca()
+            igpm_data = bcb_api.get_igpm()
+
+            data = {
+                'CDI': cdi_data,
+                'SELIC': selic_data,
+                'IPCA': ipca_data,
+                'IGPM': igpm_data,
+            }
+            return Response(data)
+        except Exception as e:
+            logging.exception("Error fetching index data")
+            return Response({"error": str(e)}, status=500)
+
 class InvestmentViewSet(viewsets.ModelViewSet):
     serializer_class = InvestmentSerializer
     queryset = Investment.objects.all()
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return self.queryset.filter(user=self.request.user)
@@ -166,6 +183,7 @@ class InvestmentViewSet(viewsets.ModelViewSet):
 class OtherInvestmentViewSet(viewsets.ModelViewSet):
     serializer_class = OtherInvestmentSerializer
     queryset = OtherInvestment.objects.all()
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return self.queryset.filter(user=self.request.user)
@@ -181,13 +199,12 @@ class ProfilePictureProxyView(APIView):
 
         try:
             response = requests.get(image_url, stream=True)
-            response.raise_for_status()  # Raise an exception for HTTP errors
+            response.raise_for_status()
 
             content_type = response.headers.get('Content-Type', 'application/octet-stream')
             
-            # Ensure CORS headers are set for the proxied image
             http_response = HttpResponse(response.iter_content(chunk_size=8192), content_type=content_type)
-            http_response['Access-Control-Allow-Origin'] = '*' # Or specific origins
+            http_response['Access-Control-Allow-Origin'] = '*'
             return http_response
 
         except requests.exceptions.RequestException as e:

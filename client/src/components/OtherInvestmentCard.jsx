@@ -1,9 +1,11 @@
+import { useState, useEffect } from 'react';
+import { useIndexes } from '../context/IndexContext';
+import { getDailyRates } from '../api/indexes';
+import { Trash2, Calendar, Landmark, TrendingUp, Loader } from 'lucide-react';
 
-import { Trash2, Calendar, Landmark, TrendingUp, Percent, FileText, Hash } from 'lucide-react';
-
-const DetailItem = ({ icon: Icon, label, value }) => (
+const DetailItem = ({ icon: IconComponent, label, value }) => (
   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-    <Icon className="w-4 h-4 text-gray-400" />
+    <IconComponent className="w-4 h-4 text-gray-400" />
     <span className="font-medium">{label}:</span>
     <span>{value}</span>
   </div>
@@ -11,11 +13,70 @@ const DetailItem = ({ icon: Icon, label, value }) => (
 
 const OtherInvestmentCard = ({ investment, onRemove }) => {
   const { name, type, details, purchase_date } = investment;
+  const { indexes, loading: loadingIndexes } = useIndexes();
+  const [currentValue, setCurrentValue] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const calculateCurrentValue = async () => {
+      const P = parseFloat(details.invested_amount);
+      const startDate = new Date(details.start_date);
+      const today = new Date();
+      const t = (today - startDate) / (1000 * 60 * 60 * 24 * 365.25); // Time in years
+
+      switch (details.yield_type) {
+        case 'prefixado': {
+          const r = parseFloat(details.rate) / 100;
+          setCurrentValue(P * Math.pow(1 + r, t));
+          break;
+        }
+        case 'posfixado': {
+          if (details.indexer) {
+            const seriesId = details.indexer === 'CDI' ? 12 : 11; // 11 for Selic, 12 for CDI
+            setIsLoading(true);
+            try {
+              const dailyRates = await getDailyRates(seriesId, details.start_date, new Date());
+              let value = P;
+              dailyRates.forEach(rate => {
+                const dailyRate = parseFloat(rate.valor) / 100;
+                const investmentRate = dailyRate * (parseFloat(details.indexer_percentage) / 100);
+                value = value * (1 + investmentRate);
+              });
+              setCurrentValue(value);
+            } catch (error) {
+              console.error('Failed to calculate posfixado value', error);
+              setCurrentValue(null); // Or handle error appropriately
+            } finally {
+              setIsLoading(false);
+            }
+          }
+          break;
+        }
+        case 'hibrido': {
+          if (indexes && indexes[details.indexer]) {
+            const inflation_rate = parseFloat(indexes[details.indexer]) / 100;
+            const spread_rate = parseFloat(details.spread_rate) / 100;
+            setCurrentValue(P * Math.pow(1 + inflation_rate, t) * Math.pow(1 + spread_rate, t));
+          }
+          break;
+        }
+        default:
+          break;
+      }
+    };
+
+    calculateCurrentValue();
+  }, [indexes, details]);
 
   const formattedAmount = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
   }).format(details.invested_amount);
+
+  const formattedCurrentValue = currentValue !== null ? new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(currentValue) : null;
 
   const formattedDate = (date) => new Date(date).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 
@@ -82,6 +143,14 @@ const OtherInvestmentCard = ({ investment, onRemove }) => {
             <span className="font-bold text-gray-800 dark:text-gray-100">{formattedAmount}</span>
           </div>
           {renderYieldDetails()}
+          {loadingIndexes || isLoading ? (
+            <Loader className="w-5 h-5 animate-spin" />
+          ) : formattedCurrentValue && (
+            <div className="flex items-center gap-2 text-lg">
+              <TrendingUp className="w-5 h-5 text-green-500" />
+              <span className="font-bold text-gray-800 dark:text-gray-100">{formattedCurrentValue}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { AuthProvider, AuthContext } from './context/AuthContext';
 import { TransactionProvider } from './context/TransactionContext';
 import { InvestmentProvider } from './context/InvestmentContext';
 import { UtilsProvider, useUtils } from './context/UtilsContext';
+import { IndexProvider } from './context/IndexContext';
 import { getProfile, updateProfile } from './api/profile';
 import DashboardPage from './pages/Dashboard';
 import GastosPage from './pages/Gastos';
@@ -115,7 +116,9 @@ export default function App() {
         <UtilsProvider>
           <TransactionProvider>
             <InvestmentProvider>
-              <AppRoutes />
+              <IndexProvider>
+                <AppRoutes />
+              </IndexProvider>
             </InvestmentProvider>
           </TransactionProvider>
         </UtilsProvider>

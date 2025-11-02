@@ -32,6 +32,7 @@ urlpatterns = [
     path('api/profile-picture-proxy/', views.ProfilePictureProxyView.as_view(), name='profile_picture_proxy'),
     path('api/investments/search/', views.InvestmentSearchView.as_view(), name='investment_search'),
     path('api/investments/quote/', views.InvestmentQuoteView.as_view(), name='investment_quote'),
+    path('api/indexes/', views.IndexDataView.as_view(), name='index-data'),
     path('api/', include(router.urls)),
     path('auth/', include('dj_rest_auth.urls')),
     path('auth/registration/', include('dj_rest_auth.registration.urls')),
