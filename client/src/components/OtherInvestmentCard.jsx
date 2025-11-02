@@ -58,31 +58,18 @@ const OtherInvestmentCard = ({ investment, onRemove }) => {
             try {
               const dailyRates = await getDailyRates(seriesId, details.start_date, new Date());
               let value = P;
-              let lastRate = 0;
 
               const ratesMap = new Map(dailyRates.map(rate => {
                 const [day, month, year] = rate.data.split('/');
                 return [`${year}-${month}-${day}`, parseFloat(rate.valor)];
               }));
 
-              // Find the last rate before or on the startDate
-              for (let i = dailyRates.length - 1; i >= 0; i--) {
-                const rateDate = new Date(dailyRates[i].data.split('/').reverse().join('-'));
-                if (rateDate <= startDate) {
-                  lastRate = parseFloat(dailyRates[i].valor) / 100;
-                  break;
-                }
-              }
-
               for (let d = new Date(startDate); d <= effectiveEndDate; d.setDate(d.getDate() + 1)) {
                 const dateString = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                 
                 if (ratesMap.has(dateString)) {
-                  lastRate = ratesMap.get(dateString) / 100;
-                }
-
-                if (lastRate > 0) {
-                  const investmentRate = lastRate * (parseFloat(details.indexer_percentage) / 100);
+                  const curRate = ratesMap.get(dateString) / 100
+                  const investmentRate = curRate * (parseFloat(details.indexer_percentage) / 100);
                   value = value * (1 + investmentRate);
                 }
               }
@@ -104,8 +91,6 @@ const OtherInvestmentCard = ({ investment, onRemove }) => {
             try {
               // 1. Fetch monthly inflation data
               const monthlyRates = await getMonthlyRates(seriesId, details.start_date, effectiveEndDate);
-
-              console.log(details.indexer, " ", monthlyRates)
 
               // 2. Calculate inflation factor              
               let inflation_factor = 1;
@@ -131,8 +116,6 @@ const OtherInvestmentCard = ({ investment, onRemove }) => {
               const t_util = business_days / 252;
               const spread_rate = parseFloat(details.spread_rate) / 100;
               const fixed_factor = Math.pow(1 + spread_rate, t_util);
-
-              console.log(details.indexer, " ", inflation_factor, " ", fixed_factor)
 
               // 4. Calculate final value
               const currentValue = P * inflation_factor * fixed_factor;
