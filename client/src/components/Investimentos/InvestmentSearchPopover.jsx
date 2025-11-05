@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'; // Added useCallback
-import Button from './Button';
-import axiosInstance from '../api/axios';
+import Button from '../shared/Button';
+import axiosInstance from '../../api/axios';
 
 const InvestmentSearchPopover = ({ searchTerm, onSearchSubmit, onSelectInvestment, onClose }) => {
   const [searchResults, setSearchResults] = useState([]);

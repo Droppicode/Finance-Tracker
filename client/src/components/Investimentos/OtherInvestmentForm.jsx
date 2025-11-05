@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useInvestments } from '../context/InvestmentContext';
-import Button from './Button';
-import Input from './Input';
-import Select from './Select';
+import { useInvestments } from '../../context/InvestmentContext';
+import Card from '../shared/Card';
+import Button from '../shared/Button';
+import Input from '../shared/Input';
+import Select from '../shared/Select';
 import { Plus } from 'lucide-react';
 
 const otherInvestmentTypes = [

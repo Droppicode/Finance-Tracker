@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useIndexes } from '../context/IndexContext';
-import { getDailyRates, getMonthlyRates } from '../api/indexes';
+import Card from '../shared/Card';
+import { useIndexes } from '../../context/IndexContext';
+import { getRates } from '../../api/indexes';
 import { Trash2, Calendar, Landmark, TrendingUp, Loader } from 'lucide-react';
 
 const DetailItem = ({ icon: IconComponent, label, value }) => (
@@ -56,7 +57,7 @@ const OtherInvestmentCard = ({ investment, onRemove }) => {
             const seriesId = details.indexer === 'CDI' ? 12 : 11; // 11 for Selic, 12 for CDI
             setIsLoading(true);
             try {
-              const dailyRates = await getDailyRates(seriesId, details.start_date, new Date());
+              const dailyRates = await getRates(seriesId, details.start_date, new Date(), 'daily');
               let value = P;
 
               const ratesMap = new Map(dailyRates.map(rate => {
@@ -90,7 +91,7 @@ const OtherInvestmentCard = ({ investment, onRemove }) => {
             setIsLoading(true);
             try {
               // 1. Fetch monthly inflation data
-              const monthlyRates = await getMonthlyRates(seriesId, details.start_date, effectiveEndDate);
+              const monthlyRates = await getRates(seriesId, details.start_date, effectiveEndDate, 'monthly');
 
               // 2. Calculate inflation factor              
               let inflation_factor = 1;
@@ -178,7 +179,7 @@ const OtherInvestmentCard = ({ investment, onRemove }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-all hover:shadow-lg">
+    <Card className="p-0 overflow-hidden transition-all hover:shadow-lg">
       <div className="p-4 bg-blue-50 dark:bg-blue-900/30 border-b border-blue-200 dark:border-blue-800 flex justify-between items-start">
         <div>
           <h4 className="font-bold text-lg text-blue-800 dark:text-blue-200">{name}</h4>
@@ -223,7 +224,7 @@ const OtherInvestmentCard = ({ investment, onRemove }) => {
           )}
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 

@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import {
   AreaChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area
 } from 'recharts';
-import axiosInstance from '../api/axios';
-import Button from './Button';
+import axiosInstance from '../../api/axios';
+import Button from '../shared/Button';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {

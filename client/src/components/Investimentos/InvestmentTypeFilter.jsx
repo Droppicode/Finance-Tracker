@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Filter, CheckSquare, Square } from 'lucide-react';
-import Button from './Button';
+import Button from '../shared/Button';
 
 const InvestmentTypeFilter = ({ options, selectedTypes, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);

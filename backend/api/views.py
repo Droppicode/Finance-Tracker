@@ -138,10 +138,13 @@ class InvestmentQuoteView(APIView):
         if not symbol:
             return Response({"error": "Símbolo não fornecido"}, status=400)
         
+        range = request.query_params.get('range', '1mo')
+        interval = request.query_params.get('interval', '1d')
+
         symbol_without_suffix = symbol.replace('.SA', '')
 
         try:
-            data = brapi_api.get_quote(symbol_without_suffix)
+            data = brapi_api.get_quote(symbol_without_suffix, range=range, interval=interval)
             quote_data = data.get('results', [{}])[0]
             return Response(quote_data)
         except Exception as e:

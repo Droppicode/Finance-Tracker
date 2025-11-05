@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useTransactions } from '../context/TransactionContext';
-import Input from './Input';
-import Select from './Select';
-import Button from './Button';
+import { useTransactions } from '../../context/TransactionContext';
+import Button from '../shared/Button';
+import Input from '../shared/Input';
+import Select from '../shared/Select';
 import { PlusCircle } from 'lucide-react';
 
 const AddTransactionForm = () => {

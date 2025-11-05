@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { X, Plus } from 'lucide-react';
 
-import Button from './Button';
+import Input from '../shared/Input';
+import Button from '../shared/Button';
 
 export default function CategoryManager({ categories, onSelectCategory, onAddCategory, onRemoveCategory }) {
   const [newCategory, setNewCategory] = useState('');
