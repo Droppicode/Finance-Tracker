@@ -75,7 +75,7 @@ Ensure you have the following installed on your system:
     npm install
     ```
 
-3.  **Backend Setup (using Docker):**
+3.  **Docker Setup:**
     *   **Create a `.env` file:** In the `backend` directory, create a file named `.env` and add your PostgreSQL database credentials and other environment variables. A sample `.env` file might look like this:
         ```
         DB_NAME=fintrack_db
@@ -88,18 +88,10 @@ Ensure you have the following installed on your system:
         ```
     *   **Build and run Docker containers:** From the `backend` directory, run:
         ```bash
-        docker-compose up --build -d
-        ```
-    *   **Apply migrations:** Once the containers are running, apply database migrations:
-        ```bash
-        docker-compose exec backend python manage.py migrate
-        ```
-    *   **Create a superuser (optional):**
-        ```bash
-        docker-compose exec backend python manage.py createsuperuser
+        docker-compose up -d
         ```
 
-4.  **Backend Setup (without Docker - for development/testing):**
+4.  **Backend Setup:**
     *   **Create a virtual environment:**
         ```bash
         cd ../backend
@@ -125,7 +117,7 @@ Ensure you have the following installed on your system:
     ```
     The frontend application will be accessible at `http://localhost:5173` (the port may vary).
 
-*   **Start the Backend Server (if not using Docker):**
+*   **Start the Backend Server:**
     ```bash
     cd backend
     source .venv/bin/activate
@@ -139,25 +131,6 @@ Ensure you have the following installed on your system:
     docker-compose down
     ```
 
-### Frontend Scripts
-
-*   **Production Build:**
-    ```bash
-    npm run build
-    ```
-    This command bundles the application for production into the `dist` directory.
-
-*   **Preview Production Build:**
-    ```bash
-    npm run preview
-    ```
-    Starts a local server to preview the production build.
-
-*   **Linting:**
-    ```bash
-    npm run lint
-    ```
-    Runs ESLint to check for code quality and style issues.
 
 ## API Endpoints
 
@@ -178,7 +151,8 @@ The backend API provides a comprehensive set of endpoints for managing financial
 ## Development Conventions
 
 *   **Styling:** Tailwind CSS is used for all styling, with utility classes applied directly in JSX.
-*   **State Management:** React hooks (`useState`, `useEffect`, `useCallback`, `useMemo`) are utilized for managing component state.
+*   **Component Structure:** Components are organized into page-specific and shared folders. Components used by a single page are located in `src/components/{PageName}`, while components used across multiple pages are in `src/components/shared`.
+*   **State Management:** React hooks (`useState`, `useEffect`, `useCallback`, `useMemo`, `useContext`) are utilized for managing component state. Global state is managed using the Context API, with contexts for Authentication, Transactions, Investments, and general utilities.
 *   **Code Quality:** ESLint is configured to enforce consistent coding styles and best practices.
 
 ## Contributing
