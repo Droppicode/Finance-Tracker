@@ -15,9 +15,17 @@ export const UtilsProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [notification, setNotification] = useState({ message: '', type: '' });
 
   const toggleSidebar = () => {
     setIsSidebarOpen(prev => !prev);
+  };
+
+  const showNotification = (message, type) => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification({ message: '', type: '' });
+    }, 3000);
   };
 
   useEffect(() => {
@@ -74,6 +82,8 @@ export const UtilsProvider = ({ children }) => {
     error,
     isSidebarOpen,
     toggleSidebar,
+    notification,
+    showNotification,
   };
 
   return <UtilsContext.Provider value={value}>{children}</UtilsContext.Provider>;

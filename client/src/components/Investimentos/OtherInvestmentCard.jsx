@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import Card from '../shared/Card';
-import { useIndexes } from '../../context/IndexContext';
-import { getRates } from '../../api/indexes';
+import { useRates } from '../../context/RatesContext';
 import { Trash2, Calendar, Landmark, TrendingUp, Loader } from 'lucide-react';
 
-const DetailItem = ({ icon: IconComponent, label, value }) => (
+const DetailItem = ({ icon: Icon, label, value }) => (
   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-    <IconComponent className="w-4 h-4 text-gray-400" />
+    <Icon className="w-4 h-4 text-gray-400" />
     <span className="font-medium">{label}:</span>
     <span>{value}</span>
   </div>
@@ -29,9 +28,8 @@ const calculateBusinessDays = (startDate, endDate) => {
 
 const OtherInvestmentCard = ({ investment, onRemove }) => {
   const { name, type, details, purchase_date } = investment;
-  const { indexes, loading: loadingIndexes } = useIndexes();
+  const { rates, loading: loadingRates } = useRates();
   const [currentValue, setCurrentValue] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const calculateCurrentValue = async () => {
@@ -39,7 +37,6 @@ const OtherInvestmentCard = ({ investment, onRemove }) => {
       const startDate = new Date(details.start_date + 'T23:59:59');
       const today = new Date();
       
-      // Determine the effective end date for compounding
       const endDate = details.due_date ? new Date(details.due_date + 'T23:59:59') : today;
       const effectiveEndDate = new Date(Math.min(today.getTime(), endDate.getTime()));
 
@@ -54,12 +51,11 @@ const OtherInvestmentCard = ({ investment, onRemove }) => {
         }
         case 'posfixado': {
           if (details.indexer) {
-            const seriesId = details.indexer === 'CDI' ? 12 : 11; // 11 for Selic, 12 for CDI
-            setIsLoading(true);
-            try {
-              const dailyRates = await getRates(seriesId, details.start_date, new Date(), 'daily');
-              let value = P;
+            const seriesId = details.indexer === 'CDI' ? 12 : 11;
+            const dailyRates = rates[seriesId];
 
+            if (dailyRates) {
+              let value = P;
               const ratesMap = new Map(dailyRates.map(rate => {
                 const [day, month, year] = rate.data.split('/');
                 return [`${year}-${month}-${day}`, parseFloat(rate.valor)];
@@ -69,42 +65,30 @@ const OtherInvestmentCard = ({ investment, onRemove }) => {
                 const dateString = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                 
                 if (ratesMap.has(dateString)) {
-                  const curRate = ratesMap.get(dateString) / 100
+                  const curRate = ratesMap.get(dateString) / 100;
                   const investmentRate = curRate * (parseFloat(details.indexer_percentage) / 100);
                   value = value * (1 + investmentRate);
                 }
               }
-
               setCurrentValue(value);
-            } catch (error) {
-              console.error('Failed to calculate posfixado value', error);
-              setCurrentValue(null); // Or handle error appropriately
-            } finally {
-              setIsLoading(false);
             }
           }
           break;
         }
         case 'hibrido': {
           if (details.indexer && details.spread_rate) {
-            const seriesId = details.indexer === 'IPCA' ? 433 : 189; // 433 for IPCA, 189 for IGP-M
-            setIsLoading(true);
-            try {
-              // 1. Fetch monthly inflation data
-              const monthlyRates = await getRates(seriesId, details.start_date, effectiveEndDate, 'monthly');
+            const seriesId = details.indexer === 'IPCA' ? 433 : 189;
+            const monthlyRates = rates[seriesId];
 
-              // 2. Calculate inflation factor              
+            if (monthlyRates) {
               let inflation_factor = 1;
-              if (monthlyRates && monthlyRates.length > 0) {
-                
-                // 1. FILTRAR: Pega apenas taxas publicadas DEPOIS do início do investimento
+              if (monthlyRates.length > 0) {
                 const applicableRates = monthlyRates.filter(rate => {
                   const [day, month, year] = rate.data.split('/');
-                  const inflationDate = new Date(year, month - 1, day)
+                  const inflationDate = new Date(year, month - 1, day);
                   return inflationDate > startDate;
                 });
 
-                // 2. REDUZIR: Calcula o fator apenas com as taxas aplicáveis
                 if (applicableRates.length > 0) {
                   inflation_factor = applicableRates.reduce((acc, rate) => {
                     return acc * (1 + parseFloat(rate.valor) / 100);
@@ -112,21 +96,13 @@ const OtherInvestmentCard = ({ investment, onRemove }) => {
                 }
               }
 
-              // 3. Calculate fixed rate factor
               const business_days = calculateBusinessDays(startDate, effectiveEndDate);
               const t_util = business_days / 252;
               const spread_rate = parseFloat(details.spread_rate) / 100;
               const fixed_factor = Math.pow(1 + spread_rate, t_util);
 
-              // 4. Calculate final value
               const currentValue = P * inflation_factor * fixed_factor;
               setCurrentValue(currentValue);
-
-            } catch (error) {
-              console.error('Failed to calculate hibrido value', error);
-              setCurrentValue(null);
-            } finally {
-              setIsLoading(false);
             }
           }
           break;
@@ -136,8 +112,10 @@ const OtherInvestmentCard = ({ investment, onRemove }) => {
       }
     };
 
-    calculateCurrentValue();
-  }, [indexes, details]);
+    if (!loadingRates) {
+      calculateCurrentValue();
+    }
+  }, [details, rates, loadingRates]);
 
   const formattedAmount = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -214,7 +192,7 @@ const OtherInvestmentCard = ({ investment, onRemove }) => {
             <span className="font-bold text-gray-800 dark:text-gray-100">{formattedAmount}</span>
           </div>
           {renderYieldDetails()}
-          {loadingIndexes || isLoading ? (
+          {loadingRates ? (
             <Loader className="w-5 h-5 animate-spin" />
           ) : formattedCurrentValue && (
             <div className="flex items-center gap-2 text-lg">

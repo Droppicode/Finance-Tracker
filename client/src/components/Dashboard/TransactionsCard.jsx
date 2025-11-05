@@ -20,7 +20,6 @@ export default function TransactionsCard({
   updateTransactionDetails,
   addCategory,
   removeCategory,
-  loading,
   selectedCategoryIds,
   toggleCategoryFilter,
   startDate,

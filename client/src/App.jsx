@@ -5,12 +5,16 @@ import { TransactionProvider } from './context/TransactionContext';
 import { InvestmentProvider } from './context/InvestmentContext';
 import { UtilsProvider, useUtils } from './context/UtilsContext';
 import { IndexProvider } from './context/IndexContext';
+import { RatesProvider } from './context/RatesContext';
+import { OnlineStatusProvider } from './context/OnlineStatusContext';
 import { getProfile, updateProfile } from './api/profile';
+import { setNotificationHandler } from './api/axios';
 import DashboardPage from './pages/Dashboard';
 import GastosPage from './pages/Gastos';
 import InvestimentosPage from './pages/Investimentos';
 import LoginPage from './pages/LoginPage';
 import Sidebar from './components/Sidebar';
+import Notification from './components/shared/Notification';
 
 const MainLayout = ({ children, isDarkMode, setIsDarkMode }) => {
   const { user, logout } = useContext(AuthContext);
@@ -31,6 +35,7 @@ const MainLayout = ({ children, isDarkMode, setIsDarkMode }) => {
         logout={logout}
       />
       <main className="flex-1 overflow-y-auto p-8 bg-gray-100 dark:bg-gray-900">
+        <Notification />
         {children}
       </main>
     </div>
@@ -45,6 +50,11 @@ const PrivateRoute = ({ children }) => {
 const AppRoutes = () => {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const { isAuthenticated } = useContext(AuthContext);
+  const { showNotification } = useUtils();
+
+  useEffect(() => {
+    setNotificationHandler(showNotification);
+  }, [showNotification]);
 
   useEffect(() => {
     const localTheme = localStorage.getItem('theme');
@@ -117,7 +127,11 @@ export default function App() {
           <TransactionProvider>
             <InvestmentProvider>
               <IndexProvider>
-                <AppRoutes />
+                <RatesProvider>
+                  <OnlineStatusProvider>
+                    <AppRoutes />
+                  </OnlineStatusProvider>
+                </RatesProvider>
               </IndexProvider>
             </InvestmentProvider>
           </TransactionProvider>
