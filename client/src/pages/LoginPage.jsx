@@ -22,6 +22,7 @@ const LoginPage = () => {
     const handleGoogleLogin = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
             try {
+                console.log(tokenResponse)
                 const res = await axiosInstance.post('/auth/google/', {
                     access_token: tokenResponse.access_token,
                 });
