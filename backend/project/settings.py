@@ -30,6 +30,9 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = False
 
 ALLOWED_HOSTS = []
+RENDER_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_HOSTNAME)
 
 
 # Application definition
@@ -75,8 +78,17 @@ MIDDLEWARE = [
 # Para desenvolvimento
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173", # Keep for local dev
-    os.getenv("CLIENT_URL"), 
 ]
+CLIENT_URL = os.getenv("CLIENT_URL")
+if CLIENT_URL:
+    CORS_ALLOWED_ORIGINS.append(CLIENT_URL)
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+]
+if CLIENT_URL:
+    CSRF_TRUSTED_ORIGINS.append(CLIENT_URL)
+
 
 ROOT_URLCONF = 'project.urls'
 
