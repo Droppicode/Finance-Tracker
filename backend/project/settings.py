@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,13 +24,15 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-&k!qu8d9##p$=@0kc!#q4#)6sfsjapv!js028uvj!!g8s7*-0e'
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
+RENDER_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_HOSTNAME)
 
 # Application definition
 
@@ -72,7 +75,18 @@ MIDDLEWARE = [
 ]
 
 # Para desenvolvimento
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173", # Keep for local dev
+]
+CLIENT_URL = os.getenv("CLIENT_URL")
+if CLIENT_URL:
+    CORS_ALLOWED_ORIGINS.append(CLIENT_URL)
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+]
+if CLIENT_URL:
+    CSRF_TRUSTED_ORIGINS.append(CLIENT_URL)
 
 ROOT_URLCONF = 'project.urls'
 
