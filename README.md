@@ -1,67 +1,34 @@
 # fin-track
 
-A comprehensive personal finance tracker application designed to help users manage their expenses and investments efficiently. This single-page application (SPA) is built with a modern tech stack, offering a rich user experience with features like bank statement processing, expense analysis, investment portfolio tracking, and a customizable dark mode.
+A personal finance tracker SPA built with React and Django. It helps users track expenses and investments through a clean, dark-mode interface. Features include PDF statement processing, transaction classification, and portfolio visualization.
 
 *This project was developed as an experiment in AI-assisted programming. A significant portion of the codebase was generated with the help of Google's Gemini, with human oversight for review, integration, and testing.*
 
-## Features
+## Core Features
 
-*   **Dashboard & Transaction Management:**
-    *   **PDF Statement Upload:** Easily upload bank statements in PDF format.
-    *   **AI-Powered Transaction Classification:** Automatically extract and classify transactions from uploaded statements.
-    *   **Manual Category Assignment:** Manually assign or re-assign categories to transactions for precise financial tracking.
-    *   **Transaction CRUD:** Full control to create, read, update, and delete individual transactions.
-*   **Expense Analysis:**
-    *   **Categorized Spending:** Visualize spending habits by category through interactive bar charts.
-    *   **Financial Insights:** Gain a clear understanding of where your money goes.
-*   **Investment Portfolio:**
-    *   **Asset Allocation:** Track your investment portfolio with a clear overview of asset distribution using pie charts.
-    *   **Investment Tracking:** Add and manage new investments to monitor your portfolio's growth.
-*   **User Experience & Customization:**
-    *   **Dark Mode (Default):** Enjoy a comfortable viewing experience with a sleek dark theme enabled by default for new users.
-    *   **User Authentication:** Secure login and registration with JWT and Google OAuth for seamless access.
-    *   **User Profiles:** Manage personal settings and preferences.
+*   PDF Bank Statement Upload & Processing
+*   Automatic & Manual Transaction Categorization
+*   Expense Analysis with Charts
+*   Investment Portfolio Tracking
+*   User Authentication (JWT & Google OAuth)
 
-## Technologies Used
+## Tech Stack
 
-### Frontend (Client)
-
-*   **Framework:** React
-*   **Build Tool:** Vite
-*   **Styling:** Tailwind CSS (with PostCSS and Autoprefixer)
-*   **Charting:** Recharts
-*   **Icons:** Lucide-React
-*   **Routing:** React Router
-*   **HTTP Client:** Axios
-*   **PDF Handling:** `react-pdf`, `pdfjs-dist`, `react-dropzone`
-*   **Authentication:** `@react-oauth/google` (for Google OAuth integration)
-*   **Linting:** ESLint
-
-### Backend (API)
-
-*   **Framework:** Django
-*   **API:** Django Rest Framework (DRF)
-*   **Authentication:** `dj-rest_auth`, `django-allauth`, `djangorestframework_simplejwt`, `oauthlib`, `PyJWT`, `python3-openid`, `social-auth-core` (for social authentication)
-*   **Database:** PostgreSQL (via Docker for development and production)
-*   **CORS:** `django-cors-headers`
-*   **PDF Processing:** `PyPDF2`
-*   **AI/Generative AI:** `google-generativeai` (for intelligent statement processing)
-*   **Environment Variables:** `python-dotenv`
+*   **Frontend:** React, Vite, Tailwind CSS, Recharts
+*   **Backend:** Django, Django Rest Framework, PostgreSQL
 *   **Containerization:** Docker
 
 ## Getting Started
 
-To get a local copy of `fin-track` up and running, follow these simple steps.
+To get a local copy of `fin-track` up and running, follow these steps.
 
 ### Prerequisites
 
-Ensure you have the following installed on your system:
+*   Node.js and npm
+*   Python 3.9+ and pip
+*   Docker and Docker Compose
 
-*   **Node.js** (LTS version recommended) and **npm** (or yarn/pnpm)
-*   **Python 3.9+** and **pip**
-*   **Docker** and **Docker Compose**
-
-### Installation
+### Local Development
 
 1.  **Clone the repository:**
     ```bash
@@ -69,100 +36,51 @@ Ensure you have the following installed on your system:
     cd fin-track
     ```
 
-2.  **Frontend Setup:**
-    ```bash
-    cd client
-    npm install
-    ```
-
-3.  **Docker Setup:**
-    *   **Create a `.env` file:** In the `backend` directory, create a file named `.env` and add your PostgreSQL database credentials and other environment variables. A sample `.env` file might look like this:
-        ```
+2.  **Backend Setup:**
+    *   Navigate to the backend directory: `cd backend`
+    *   Create a `.env` file. You can use the following as a template:
+        ```env
+        # backend/.env
         DB_NAME=fintrack_db
         DB_USER=fintrack_user
         DB_PASSWORD=fintrack_password
         DB_HOST=postgres
         DB_PORT=5432
-        SECRET_KEY=your_django_secret_key
-        # Add any other necessary environment variables, e.g., for Google Generative AI
+        SECRET_KEY='your-strong-secret-key'
+        # Add other secrets like Google API keys if needed
         ```
-    *   **Build and run Docker containers:** From the `backend` directory, run:
+    *   Start the PostgreSQL database using Docker:
         ```bash
         docker-compose up -d
         ```
-
-4.  **Backend Setup:**
-    *   **Create a virtual environment:**
+    *   Set up a Python virtual environment and install dependencies:
         ```bash
-        cd ../backend
         python3 -m venv .venv
         source .venv/bin/activate
-        ```
-    *   **Install dependencies:**
-        ```bash
         pip install -r requirements.txt
         ```
-    *   **Create a `.env` file:** In the `backend` directory, create a file named `.env` and add your database credentials (e.g., for SQLite or a local PostgreSQL instance) and other environment variables. For SQLite, you might just need `SECRET_KEY`.
-    *   **Apply migrations:**
+    *   Apply database migrations:
         ```bash
         python3 manage.py migrate
         ```
+    *   Run the backend server:
+        ```bash
+        python3 manage.py runserver
+        ```
+        The backend will be available at `http://127.0.0.1:8000`.
 
-### Running the Application
-
-*   **Start the Frontend Development Server:**
-    ```bash
-    cd client
-    npm run dev
-    ```
-    The frontend application will be accessible at `http://localhost:5173` (the port may vary).
-
-*   **Start the Backend Server:**
-    ```bash
-    cd backend
-    source .venv/bin/activate
-    python3 manage.py runserver
-    ```
-    The backend API will be running at `http://127.0.0.1:8000/`.
-
-*   **Stopping Docker Containers:**
-    ```bash
-    cd backend
-    docker-compose down
-    ```
-
-
-## API Endpoints
-
-The backend API provides a comprehensive set of endpoints for managing financial data and user authentication:
-
-*   `/admin/`: Django Administration panel.
-*   `/api/process-statement/`: Endpoint for uploading and processing PDF bank statements.
-*   `/api/profile/`: Retrieve and update the authenticated user's profile (e.g., theme settings).
-*   `/api/transactions/`: CRUD operations for user transactions.
-*   `/api/categories/`: CRUD operations for user-defined transaction categories.
-*   `/auth/login/`: Authenticate users and obtain JWT tokens.
-*   `/auth/logout/`: Invalidate JWT tokens.
-*   `/auth/user/`: Retrieve details of the authenticated user.
-*   `/auth/registration/`: Register new user accounts.
-*   `/auth/google/`: Initiate Google OAuth login flow.
-*   `/accounts/`: Django Allauth URLs for social account management.
-
-## Development Conventions
-
-*   **Styling:** Tailwind CSS is used for all styling, with utility classes applied directly in JSX.
-*   **Component Structure:** Components are organized into page-specific and shared folders. Components used by a single page are located in `src/components/{PageName}`, while components used across multiple pages are in `src/components/shared`.
-*   **State Management:** React hooks (`useState`, `useEffect`, `useCallback`, `useMemo`, `useContext`) are utilized for managing component state. Global state is managed using the Context API, with contexts for Authentication, Transactions, Investments, and general utilities.
-*   **Code Quality:** ESLint is configured to enforce consistent coding styles and best practices.
-
-## Contributing
-
-Contributions are welcome! Please feel free to fork the repository, create a new branch, and submit a pull request.
+3.  **Frontend Setup:**
+    *   In a new terminal, navigate to the client directory: `cd client`
+    *   Install dependencies:
+        ```bash
+        npm install
+        ```
+    *   Run the frontend development server:
+        ```bash
+        npm run dev
+        ```
+        The frontend will be available at `http://localhost:5173`.
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
-
-## Contact
-
-For any inquiries or feedback, please open an issue on the GitHub repository.
+This project is licensed under the MIT License.
