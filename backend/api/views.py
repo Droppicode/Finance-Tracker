@@ -19,8 +19,7 @@ from . import bcb_api
 
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
-    callback_url = 'http://localhost:5173'
-    client_class = OAuth2Client
+    callback_url = os.getenv("CLIENT_URL")
 
 class ProcessStatementView(APIView):
     parser_classes = (MultiPartParser, FormParser)

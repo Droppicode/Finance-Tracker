@@ -75,7 +75,7 @@ MIDDLEWARE = [
 # Para desenvolvimento
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173", # Keep for local dev
-    "https://finance-tracker-eight-nu.vercel.app/", 
+    os.getenv("CLIENT_URL"), 
 ]
 
 ROOT_URLCONF = 'project.urls'
