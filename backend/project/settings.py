@@ -24,7 +24,7 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-&k!qu8d9##p$=@0kc!#q4#)6sfsjapv!js028uvj!!g8s7*-0e'
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
@@ -75,7 +75,7 @@ MIDDLEWARE = [
 # Para desenvolvimento
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173", # Keep for local dev
-    # "https://fin-track.onrender.com", # Add this once you deploy the frontend
+    "https://finance-tracker-eight-nu.vercel.app/", 
 ]
 
 ROOT_URLCONF = 'project.urls'
