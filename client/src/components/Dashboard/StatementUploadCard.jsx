@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Document, Page, pdfjs } from 'react-pdf';
 import Button from '../shared/Button';
+import Modal from '../shared/Modal';
 import { Upload, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 
 // Configure o worker do PDF.js
@@ -61,9 +62,8 @@ export default function StatementUploadCard({ processStatement }) {
   const zoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.5));
 
   return (
-    <div className="md:pr-8">
-      <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Upload de Extrato (PDF)</h2>
-      <div {...getRootProps()} className={`flex flex-col items-center justify-center w-full p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition-colors ${isDragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''}`}>
+    <div className="flex flex-col">
+      <div {...getRootProps()} className={`flex flex-col items-center justify-center w-full p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition-colors flex-grow ${isDragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''}`}>
         <input {...getInputProps()} />
         <Upload className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
         {isDragActive ?
@@ -73,11 +73,11 @@ export default function StatementUploadCard({ processStatement }) {
       </div>
       {uploadedFile && (
         <div className="mt-4 space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
             <p className="text-sm text-gray-600 dark:text-gray-300">Arquivo: {uploadedFile.name}</p>
             <div className="flex items-center space-x-2">
-              <Button onClick={() => setIsPreviewOpen(!isPreviewOpen)} variant="secondary">
-                {isPreviewOpen ? 'Fechar Preview' : 'Abrir Preview'}
+              <Button onClick={() => setIsPreviewOpen(true)} variant="secondary">
+                Abrir Preview
               </Button>
               <Button onClick={handleUpload} variant="primary" disabled={isProcessing}>
                 {isProcessing ? 'Processando...' : 'Processar Arquivo'}
@@ -89,9 +89,13 @@ export default function StatementUploadCard({ processStatement }) {
               {error}
             </div>
           )}
-          {isPreviewOpen && (
+          <Modal
+            isOpen={isPreviewOpen}
+            onClose={() => setIsPreviewOpen(false)}
+            title="Pré-visualização do Extrato"
+          >
             <div className="border rounded-lg p-4 bg-gray-200 dark:bg-gray-900">
-              <div className="max-h-96 overflow-y-auto mb-4">
+              <div className="max-h-[80vh] overflow-y-auto mb-4">
                 <Document
                   file={uploadedFile}
                   onLoadSuccess={onDocumentLoadSuccess}
@@ -123,7 +127,7 @@ export default function StatementUploadCard({ processStatement }) {
                 </div>
               </div>
             </div>
-          )}
+          </Modal>
         </div>
       )}
     </div>

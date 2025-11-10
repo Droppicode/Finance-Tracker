@@ -95,7 +95,7 @@ export default function EditableTableCell({ value, onSave, cellType = 'text', op
           {transactionType === 'credit' ? '+' : '-'}
         </span>
       )}
-      <span className="flex-grow">
+      <span className="flex-grow dark:text-white">
         {cellType === 'number' ? (Number(value) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : value}
       </span>
     </div>
