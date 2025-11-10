@@ -72,7 +72,7 @@ const extractTransactionsFromText = async (text) => {
       return JSON.parse(cleanedResponse);
     } catch (e) {
       console.error(`Attempt ${i + 1} failed:`, e);
-      if (e.includes("503 Service Unavailable") && e.includes("model is overloaded") && i < MAX_RETRIES - 1) {
+      if (e.status === 503 && e.message?.includes("model is overloaded") && i < MAX_RETRIES - 1) {
         console.log(`Retrying in ${RETRY_DELAY_MS / 1000} seconds...`);
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
       } else {
