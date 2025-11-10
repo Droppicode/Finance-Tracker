@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
 
-const BASE_URL = '/api/transactions'; // Base path for Vercel Transactions functions
+const BASE_URL = `${API_BASE_URL}/api/transactions`; // Base path for Vercel Transactions functions
 
 export const processStatement = async (text) => {
   console.log("Calling processStatement API with text (first 200 chars):", text.substring(0, 200));

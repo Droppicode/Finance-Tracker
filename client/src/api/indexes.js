@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
 
-const BASE_URL = '/api/bcb'; // Base path for Vercel BCB functions
+const BASE_URL = `${API_BASE_URL}/api/bcb`; // Base path for Vercel BCB functions
 
 export const getRates = async (seriesId, startDate, endDate, periodicity) => {
   try {

@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
 
-const BASE_URL = '/api/brapi'; // Base path for Vercel Brapi functions
+const BASE_URL = `${API_BASE_URL}/api/brapi`; // Base path for Vercel Brapi functions
 
 export const searchSymbol = async (symbol) => {
   try {
