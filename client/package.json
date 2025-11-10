@@ -17,7 +17,7 @@
     "axios": "^1.13.2",
     "firebase": "^12.5.0",
     "lucide-react": "^0.548.0",
-    "pdfjs-dist": "^5.4.394",
+    "pdfjs-dist": "5.4.296",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-dropzone": "^14.3.8",
