@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTransactions } from '../../context/TransactionContext';
 import Button from '../shared/Button';
 import Input from '../shared/Input';
-import Select from '../shared/Select';
-import { PlusCircle } from 'lucide-react';
+import CategoryManager from './CategoryManager';
+import Select from '../shared/Select'; // Keep Select for 'Tipo'
+import { PlusCircle, ChevronDown } from 'lucide-react';
 
 const AddTransactionForm = () => {
-  const { addTransaction, categories } = useTransactions();
+  const { addTransaction, categories, addCategory } = useTransactions();
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -14,6 +15,29 @@ const AddTransactionForm = () => {
   const [type, setType] = useState('debit');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+
+  const categoryManagerRef = useRef(null);
+
+  const selectedCategoryName = categories.find(c => c.id === categoryId)?.name || 'Selecione uma categoria...';
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (categoryManagerRef.current && !categoryManagerRef.current.contains(event.target)) {
+        setShowCategoryManager(false);
+      }
+    };
+
+    if (showCategoryManager) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCategoryManager]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -91,14 +115,32 @@ const AddTransactionForm = () => {
                 onChange={(e) => setType(e.target.value)}
                 options={typeOptions}
             />
-            <Select
-                label="Categoria"
-                id="category"
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                options={[{ value: '', label: 'Selecione...' }, ...categoryOptions]}
-                required
-            />
+            <div className="relative" ref={categoryManagerRef}>
+              <div
+                className="flex items-center justify-between cursor-pointer p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                onClick={() => setShowCategoryManager(!showCategoryManager)}
+              >
+                <span>{selectedCategoryName}</span>
+                <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+              {showCategoryManager && (
+                <CategoryManager
+                  categories={categoryOptions}
+                  onSelectCategory={(id) => {
+                    setCategoryId(id);
+                    setShowCategoryManager(false);
+                  }}
+                  onAddCategory={async (name) => {
+                    const newCat = await addCategory(name);
+                    if (newCat) {
+                      setCategoryId(newCat.id);
+                      setShowCategoryManager(false);
+                    }
+                  }}
+                  // onRemoveCategory is not needed here
+                />
+              )}
+            </div>
         </div>
         {error && <p className="text-sm text-red-500 dark:text-red-400">{error}</p>}
         <Button type="submit" disabled={isSubmitting} className="w-full">

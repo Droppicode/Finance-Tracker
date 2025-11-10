@@ -72,9 +72,9 @@ export default function Sidebar({ isDarkMode, setIsDarkMode, user, logout }) {
         <div className="relative">
           <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center w-full p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
             {user && (
-              <img src={user.profile_picture} alt="User profile" className="w-10 h-10 rounded-full" />
+              <img src={user.photoURL} alt="User profile" className="w-10 h-10 rounded-full" />
             )}
-            <span className="ml-3 text-gray-800 dark:text-gray-100">{user ? user.first_name : 'User'}</span>
+            <span className="ml-3 text-gray-800 dark:text-gray-100">{user ? user.displayName : 'User'}</span>
           </button>
           {isDropdownOpen && (
             <div className="absolute bottom-full left-0 w-full mb-2 bg-white dark:bg-gray-700 rounded-lg shadow-lg">

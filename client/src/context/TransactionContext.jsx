@@ -41,7 +41,16 @@ export const TransactionProvider = ({ children }) => {
           getProfile(),
         ]);
         
-        setTransactions(transactionsData);
+        // Map categories to a more accessible format for lookup
+        const categoriesMap = new Map(categoriesData.map(cat => [cat.id, cat]));
+
+        // Attach full category objects to transactions
+        const transactionsWithCategories = transactionsData.map(t => ({
+          ...t,
+          category: categoriesMap.get(t.category_id) || null,
+        }));
+
+        setTransactions(transactionsWithCategories);
         setCategories(categoriesData);
 
         if (profileData.filtered_categories) {
@@ -140,9 +149,12 @@ export const TransactionProvider = ({ children }) => {
   const handleAddTransaction = async (transactionData) => {
     try {
       const newTransaction = await createTransaction(transactionData);
-      setTransactions(prev => [...prev, newTransaction].sort((a, b) => new Date(b.date) - new Date(a.date)));
+      // Find the full category object based on the category_id
+      const category = categories.find(c => c.id === newTransaction.category_id);
+      const transactionWithCategory = { ...newTransaction, category };
+      setTransactions(prev => [...prev, transactionWithCategory].sort((a, b) => new Date(b.date) - new Date(a.date)));
       showNotification("Transação adicionada com sucesso!", "success");
-      return newTransaction;
+      return transactionWithCategory;
     } catch (err) {
       console.error("Error adding transaction:", err);
       showNotification("Erro ao adicionar transação.", "error");
