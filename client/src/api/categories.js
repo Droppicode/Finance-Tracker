@@ -1,7 +1,26 @@
-import axiosInstance from './axios';
+import { db, auth } from './firebase';
+import { collection, getDocs, addDoc, doc, deleteDoc } from 'firebase/firestore';
 
-export const getCategories = () => axiosInstance.get('/api/categories/');
+const getCategoriesCollection = () => {
+    if (!auth.currentUser) throw new Error("User not authenticated");
+    const userId = auth.currentUser.uid;
+    return collection(db, 'users', userId, 'categories');
+};
 
-export const createCategory = (category) => axiosInstance.post('/api/categories/', category);
+export const getCategories = async () => {
+    const categoriesCol = getCategoriesCollection();
+    const snapshot = await getDocs(categoriesCol);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
 
-export const deleteCategory = (id) => axiosInstance.delete(`/api/categories/${id}/`);
+export const createCategory = async (category) => {
+    const categoriesCol = getCategoriesCollection();
+    const docRef = await addDoc(categoriesCol, category);
+    return { id: docRef.id, ...category };
+};
+
+export const deleteCategory = (id) => {
+    const categoriesCol = getCategoriesCollection();
+    const categoryDoc = doc(categoriesCol, id);
+    return deleteDoc(categoryDoc);
+};

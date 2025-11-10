@@ -20,8 +20,8 @@ export const TransactionProvider = ({ children }) => {
 
   const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
 
-  const { isAuthenticated } = useContext(AuthContext);
-  const { startDate, endDate, updateDates, loading: utilsLoading } = useUtils();
+  const { user, isAuthenticated } = useContext(AuthContext);
+  const { startDate, endDate, updateDates, loading: utilsLoading, showNotification } = useUtils();
 
   const toYYYYMMDD = (date) => {
     if (!date) return '';
@@ -31,26 +31,27 @@ export const TransactionProvider = ({ children }) => {
 
   useEffect(() => {
     const loadData = async () => {
+      if (!user) return;
       try {
         setLoading(true);
-        const [transactionsRes, categoriesRes, profileRes] = await Promise.all([
+        const [transactionsData, categoriesData, profileData] = await Promise.all([
           getTransactions(),
           getCategories(),
           getProfile(),
         ]);
         
-        setTransactions(transactionsRes.data);
-        setCategories(categoriesRes.data);
+        setTransactions(transactionsData);
+        setCategories(categoriesData);
 
-        const { filtered_categories } = profileRes.data;
-        if (filtered_categories) {
-          setSelectedCategoryIds(filtered_categories);
+        if (profileData.filtered_categories) {
+          setSelectedCategoryIds(profileData.filtered_categories);
         }
 
         setError(null);
       } catch (err) {
         console.error("Error loading data:", err);
         setError("Failed to load data.");
+        showNotification("Erro ao carregar os dados. Tente novamente mais tarde.", "error");
       } finally {
         setLoading(false);
       }
@@ -63,7 +64,7 @@ export const TransactionProvider = ({ children }) => {
       setCategories([]);
       setLoading(false);
     }
-  }, [isAuthenticated, utilsLoading]);
+  }, [isAuthenticated, utilsLoading, user]);
 
   // Debounced effect to save preferences to profile
   useEffect(() => {
@@ -72,7 +73,10 @@ export const TransactionProvider = ({ children }) => {
     const handler = setTimeout(() => {
       updateProfile({ 
         filtered_categories: selectedCategoryIds,
-      }).catch(err => console.error("Failed to save preferences:", err));
+      }).catch(err => {
+        console.error("Failed to save preferences:", err)
+        showNotification("Erro ao salvar suas preferências.", "error");
+      });
     }, 1000);
 
     return () => {
@@ -127,12 +131,13 @@ export const TransactionProvider = ({ children }) => {
 
   const handleAddTransaction = async (transactionData) => {
     try {
-      const response = await createTransaction(transactionData);
-      const newTransaction = response.data;
+      const newTransaction = await createTransaction(transactionData);
       setTransactions(prev => [...prev, newTransaction].sort((a, b) => new Date(b.date) - new Date(a.date)));
+      showNotification("Transação adicionada com sucesso!", "success");
       return newTransaction;
     } catch (err) {
       console.error("Error adding transaction:", err);
+      showNotification("Erro ao adicionar transação.", "error");
       throw err;
     }
   };
@@ -142,9 +147,11 @@ export const TransactionProvider = ({ children }) => {
     setTransactions(prev => prev.filter(t => t.id !== id));
     try {
       await deleteTransaction(id);
+      showNotification("Transação excluída com sucesso!", "success");
     } catch (err) {
       console.error("Error deleting transaction:", err);
       setTransactions(originalTransactions);
+      showNotification("Erro ao excluir transação.", "error");
     }
   };
 
@@ -155,10 +162,12 @@ export const TransactionProvider = ({ children }) => {
       prev.map(t => (t.id === id ? { ...t, category } : t))
     );
     try {
-      await updateTransaction(id, { category_id: categoryId });
+      await updateTransaction(id, { category_id: categoryId, category: category }); // Storing full category object for now
+      showNotification("Categoria da transação atualizada!", "success");
     } catch (err) {
       console.error("Error updating transaction category:", err);
       setTransactions(originalTransactions);
+      showNotification("Erro ao atualizar a categoria.", "error");
     }
   };
 
@@ -169,19 +178,23 @@ export const TransactionProvider = ({ children }) => {
     );
     try {
       await updateTransaction(id, data);
+      showNotification("Transação atualizada com sucesso!", "success");
     } catch (err) {
       console.error("Error updating transaction:", err);
       setTransactions(originalTransactions);
+      showNotification("Erro ao atualizar a transação.", "error");
       throw err;
     }
   };
 
   const handleAddCategory = async (name) => {
     try {
-      const response = await createCategory({ name });
-      setCategories(prev => [...prev, response.data]);
+      const newCategory = await createCategory({ name });
+      setCategories(prev => [...prev, newCategory]);
+      showNotification("Categoria adicionada com sucesso!", "success");
     } catch (err) {
       console.error("Error adding category:", err);
+      showNotification("Erro ao adicionar categoria.", "error");
     }
   };
 
@@ -193,9 +206,11 @@ export const TransactionProvider = ({ children }) => {
     );
     try {
       await deleteCategory(id);
+      showNotification("Categoria removida com sucesso!", "success");
     } catch (err) {
       console.error("Error deleting category:", err);
       setCategories(originalCategories);
+      showNotification("Erro ao remover categoria.", "error");
     }
   };
 

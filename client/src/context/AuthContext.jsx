@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
-import axiosInstance from '../api/axios';
+import { auth } from '../api/firebase';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 
 export const AuthContext = createContext();
 
@@ -9,38 +10,21 @@ export const AuthProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            axiosInstance.get('/auth/user/')
-                .then(res => {
-                    setUser(res.data);
-                    setIsAuthenticated(true);
-                })
-                .catch(() => {
-                    localStorage.removeItem('token');
-                })
-                .finally(() => {
-                    setIsLoading(false);
-                });
-        } else {
-            setIsAuthenticated(false);
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setUser(user);
+            setIsAuthenticated(!!user);
             setIsLoading(false);
-        }
+        });
+
+        return () => unsubscribe();
     }, []);
 
-    const login = (token) => {
-        localStorage.setItem('token', token);
-        return axiosInstance.get('/auth/user/')
-            .then(res => {
-                setUser(res.data);
-                setIsAuthenticated(true);
-            });
+    const login = (email, password) => {
+        return signInWithEmailAndPassword(auth, email, password);
     };
 
     const logout = () => {
-        localStorage.removeItem('token');
-        setUser(null);
-        setIsAuthenticated(false);
+        return signOut(auth);
     };
 
     if (isLoading) {

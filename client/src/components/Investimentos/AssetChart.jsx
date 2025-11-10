@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import {
   AreaChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area
 } from 'recharts';
-import axiosInstance from '../../api/axios';
 import Button from '../shared/Button';
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -29,13 +28,36 @@ const AssetChart = ({ symbol }) => {
       if (!symbol) return;
       setLoading(true);
       try {
-        const response = await axiosInstance.get(`/api/investments/quote/?symbol=${symbol}&range=${range}&interval=1d`);
-        // A API do Brapi retorna os dados em `historicalDataPrice`
-        const chartData = response.data.historicalDataPrice.map(item => ({
-          date: new Date(item.date * 1000).toLocaleDateString('pt-BR'),
-          price: item.close,
-        }));
-        setData(chartData);
+        // Mocked chart data generation
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+        const generateMockData = (numPoints) => {
+          let lastPrice = 100 + Math.random() * 50;
+          const mockData = [];
+          for (let i = 0; i < numPoints; i++) {
+            const date = new Date();
+            date.setDate(date.getDate() - (numPoints - i));
+            lastPrice += (Math.random() - 0.5) * 5;
+            mockData.push({
+              date: date.toLocaleDateString('pt-BR'),
+              price: Math.max(10, lastPrice), // Ensure price doesn't go below 10
+            });
+          }
+          return mockData;
+        };
+        
+        let numPoints;
+        switch(range) {
+          case '1d': numPoints = 8; break;
+          case '5d': numPoints = 5; break;
+          case '1mo': numPoints = 30; break;
+          case '3mo': numPoints = 90; break;
+          case '6mo': numPoints = 180; break;
+          case '1y': numPoints = 365; break;
+          case '5y': numPoints = 365 * 5; break;
+          default: numPoints = 365 * 10; break; // max
+        }
+
+        setData(generateMockData(numPoints));
       } catch (error) {
         console.error("Erro ao buscar dados do gráfico:", error);
         setData([]);

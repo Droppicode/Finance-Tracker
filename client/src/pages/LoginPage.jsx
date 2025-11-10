@@ -1,9 +1,9 @@
-import React, { useContext } from 'react';
-import { useGoogleLogin } from '@react-oauth/google';
+import React, { useContext, useEffect } from 'react';
 import { TrendingUp } from 'lucide-react';
-import axiosInstance from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { auth } from '../api/firebase';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 const GoogleIcon = (props) => (
     <svg viewBox="0 0 48 48" {...props}>
@@ -17,21 +17,23 @@ const GoogleIcon = (props) => (
 
 const LoginPage = () => {
     const navigate = useNavigate();
-    const { login } = useContext(AuthContext);
+    const { isAuthenticated } = useContext(AuthContext);
 
-    const handleGoogleLogin = useGoogleLogin({
-        onSuccess: async (tokenResponse) => {
-            try {
-                const res = await axiosInstance.post('/auth/google/', {
-                    access_token: tokenResponse.access_token,
-                });
-                await login(res.data.access);
-                navigate('/');
-            } catch (error) {
-                console.error('Google login error:', error);
-            }
-        },
-    });
+    const handleGoogleLogin = async () => {
+        const provider = new GoogleAuthProvider();
+        try {
+            await signInWithPopup(auth, provider);
+            navigate('/');
+        } catch (error) {
+            console.error('Google login error:', error);
+        }
+    };
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/');
+        }
+    }, [isAuthenticated, navigate]);
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-900 md:flex-row">
@@ -57,7 +59,7 @@ const LoginPage = () => {
                         Acesse sua conta
                     </h2>
                     <button
-                        onClick={() => handleGoogleLogin()}
+                        onClick={handleGoogleLogin}
                         className="flex items-center justify-center w-full gap-3 px-4 py-3 font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-700 focus:ring-blue-500"
                     >
                         <GoogleIcon className="w-6 h-6" />

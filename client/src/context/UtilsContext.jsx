@@ -34,11 +34,11 @@ export const UtilsProvider = ({ children }) => {
         try {
           setLoading(true);
           const profile = await getProfile();
-          if (profile.data.start_date) {
-            setStartDate(new Date(profile.data.start_date.replace(/-/g, '/'))); // Timezone fix
+          if (profile.start_date) {
+            setStartDate(new Date(profile.start_date.replace(/-/g, '/'))); // Timezone fix
           }
-          if (profile.data.end_date) {
-            setEndDate(new Date(profile.data.end_date.replace(/-/g, '/'))); // Timezone fix
+          if (profile.end_date) {
+            setEndDate(new Date(profile.end_date.replace(/-/g, '/'))); // Timezone fix
           }
         } catch (err) {
           setError(err);
@@ -54,17 +54,16 @@ export const UtilsProvider = ({ children }) => {
 
   const updateDates = async (newStartDate, newEndDate) => {
     try {
-      const updatedProfile = await updateProfile({
+      await updateProfile({
         start_date: newStartDate ? newStartDate.toISOString().split('T')[0] : null,
         end_date: newEndDate ? newEndDate.toISOString().split('T')[0] : null,
       });
-      if (updatedProfile.data.start_date) {
-        setStartDate(new Date(updatedProfile.data.start_date.replace(/-/g, '/'))); // Timezone fix
+      if (newStartDate) {
+        setStartDate(newStartDate);
       }
-      if (updatedProfile.data.end_date) {
-        setEndDate(new Date(updatedProfile.data.end_date.replace(/-/g, '/'))); // Timezone fix
+      if (newEndDate) {
+        setEndDate(newEndDate);
       }
-      return updatedProfile;
     } catch (err) {
       setError(err);
       console.error('Error updating user profile dates:', err);

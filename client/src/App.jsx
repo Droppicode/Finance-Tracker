@@ -4,11 +4,9 @@ import { AuthProvider, AuthContext } from './context/AuthContext';
 import { TransactionProvider } from './context/TransactionContext';
 import { InvestmentProvider } from './context/InvestmentContext';
 import { UtilsProvider, useUtils } from './context/UtilsContext';
-import { IndexProvider } from './context/IndexContext';
 import { RatesProvider } from './context/RatesContext';
 import { OnlineStatusProvider } from './context/OnlineStatusContext';
 import { getProfile, updateProfile } from './api/profile';
-import { setNotificationHandler } from './api/axios';
 import DashboardPage from './pages/Dashboard';
 import GastosPage from './pages/Gastos';
 import InvestimentosPage from './pages/Investimentos';
@@ -50,11 +48,6 @@ const PrivateRoute = ({ children }) => {
 const AppRoutes = () => {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const { isAuthenticated } = useContext(AuthContext);
-  const { showNotification } = useUtils();
-
-  useEffect(() => {
-    setNotificationHandler(showNotification);
-  }, [showNotification]);
 
   useEffect(() => {
     const localTheme = localStorage.getItem('theme');
@@ -64,8 +57,8 @@ const AppRoutes = () => {
 
     const fetchProfile = async () => {
       try {
-        const response = await getProfile();
-        const theme = response.data.theme;
+        const profile = await getProfile();
+        const theme = profile.theme;
         setIsDarkMode(theme === 'dark');
         localStorage.setItem('theme', theme);
       } catch (error) {
@@ -126,13 +119,11 @@ export default function App() {
         <UtilsProvider>
           <TransactionProvider>
             <InvestmentProvider>
-              <IndexProvider>
-                <RatesProvider>
-                  <OnlineStatusProvider>
-                    <AppRoutes />
-                  </OnlineStatusProvider>
-                </RatesProvider>
-              </IndexProvider>
+              <RatesProvider>
+                <OnlineStatusProvider>
+                  <AppRoutes />
+                </OnlineStatusProvider>
+              </RatesProvider>
             </InvestmentProvider>
           </TransactionProvider>
         </UtilsProvider>

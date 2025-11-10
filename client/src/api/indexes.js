@@ -1,37 +1,21 @@
-import axiosInstance from './axios';
+import { httpsCallable } from "firebase/functions";
+import { functions } from "./firebase";
 
-export const getIndexes = async () => {
-  try {
-    const response = await axiosInstance.get('/api/indexes/');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching indexes:', error);
-    throw error;
-  }
-};
+const getDailySeriesFunction = httpsCallable(functions, 'bcb-getDailySeries');
+const getMonthlySeriesFunction = httpsCallable(functions, 'bcb-getMonthlySeries');
 
 export const getRates = async (seriesId, startDate, endDate, periodicity) => {
-  const formatDate = (date) => {
-    const d = new Date(date);
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
-
-  const endpoint = periodicity === 'daily' ? '/api/daily-rates/' : '/api/monthly-rates/';
-
   try {
-    const response = await axiosInstance.get(endpoint, {
-      params: {
-        series_id: seriesId,
-        start_date: formatDate(startDate),
-        end_date: formatDate(endDate),
-      },
-    });
-    return response.data;
+    const params = { seriesId, startDate, endDate };
+    let result;
+    if (periodicity === 'daily') {
+      result = await getDailySeriesFunction(params);
+    } else { // monthly
+      result = await getMonthlySeriesFunction(params);
+    }
+    return result.data;
   } catch (error) {
-    console.error(`Error fetching ${periodicity} rates for series ${seriesId}:`, error);
+    console.error(`Error fetching rates for series ${seriesId}:`, error);
     throw error;
   }
 };

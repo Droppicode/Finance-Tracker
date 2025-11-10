@@ -8,7 +8,7 @@ import SavedInvestmentsCard from '../components/Investimentos/SavedInvestmentsCa
 import InvestmentDetailsCard from '../components/Investimentos/InvestmentDetailsCard';
 import { useInvestments } from '../context/InvestmentContext';
 import { useUtils } from '../context/UtilsContext';
-import axiosInstance from '../api/axios';
+import { getQuote } from '../api/brapi';
 
 const investmentOptions = [
   { value: 'stock', label: 'Ações' },
@@ -43,9 +43,9 @@ export default function InvestimentosPage() {
 
   const handleSelectInvestment = async (investment) => {
     try {
-      const response = await axiosInstance.get(`/api/investments/quote/?symbol=${investment.stock}`);
-      setAssetQuote(response.data);
-      return response.data;
+      const quote = await getQuote(investment.stock);
+      setAssetQuote(quote);
+      return quote;
     } catch (error) {
       console.error("Erro ao buscar cotação do ativo:", error);
       return null;

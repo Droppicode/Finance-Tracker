@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from 'react'; // Added useCallback
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Button from '../shared/Button';
-import axiosInstance from '../../api/axios';
+import { searchSymbol } from '../../api/brapi';
 
 const InvestmentSearchPopover = ({ searchTerm, onSearchSubmit, onSelectInvestment, onClose }) => {
   const [searchResults, setSearchResults] = useState([]);
@@ -21,7 +21,7 @@ const InvestmentSearchPopover = ({ searchTerm, onSearchSubmit, onSelectInvestmen
     };
   }, [wrapperRef, onClose]);
 
-  const handleSearch = useCallback(async () => { // Wrapped in useCallback
+  const handleSearch = useCallback(async () => {
     if (!searchTerm.trim()) {
       setLastSearchTerm(null);
       setSearchResults([]);
@@ -31,9 +31,9 @@ const InvestmentSearchPopover = ({ searchTerm, onSearchSubmit, onSelectInvestmen
     setLoadingSearch(true);
     setSearchError(null);
     try {
-      const response = await axiosInstance.get(`/api/investments/search/?symbol=${searchTerm}`);
+      const results = await searchSymbol(searchTerm);
       setLastSearchTerm(searchTerm);
-      setSearchResults(response.data || []);
+      setSearchResults(results);
     } catch (err) {
       console.error("Erro ao buscar investimentos:", err);
       setSearchError("Erro ao buscar investimentos. Tente novamente.");
@@ -42,7 +42,7 @@ const InvestmentSearchPopover = ({ searchTerm, onSearchSubmit, onSelectInvestmen
     } finally {
       setLoadingSearch(false);
     }
-  }, [searchTerm]); // Dependency on searchTerm
+  }, [searchTerm]);
 
   // Expose handleSearch to parent via onSearchSubmit prop
   useEffect(() => {

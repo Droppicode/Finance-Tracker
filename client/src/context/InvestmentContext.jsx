@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import { getInvestments, createInvestment, updateInvestment, deleteInvestment, getOtherInvestments, createOtherInvestment, deleteOtherInvestment } from '../api/investments';
 import { AuthContext } from './AuthContext';
+import { useUtils } from './UtilsContext';
 
 const InvestmentContext = createContext();
 
@@ -11,10 +12,11 @@ export const InvestmentProvider = ({ children }) => {
   const [otherInvestments, setOtherInvestments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { isAuthenticated } = useContext(AuthContext);
+  const { user, isAuthenticated } = useContext(AuthContext);
+  const { showNotification } = useUtils();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user) {
       setInvestments([]);
       setOtherInvestments([]);
       return;
@@ -22,59 +24,60 @@ export const InvestmentProvider = ({ children }) => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await getInvestments();
-        setInvestments(res.data);
-        const otherRes = await getOtherInvestments();
-        setOtherInvestments(otherRes.data);
+        const investmentsData = await getInvestments();
+        setInvestments(investmentsData);
+        const otherInvestmentsData = await getOtherInvestments();
+        setOtherInvestments(otherInvestmentsData);
         setError(null);
-      } catch {
+      } catch (err) {
         setError('Erro ao carregar investimentos.');
+        showNotification('Erro ao carregar investimentos.', 'error');
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   const addInvestment = async (investment) => {
     try {
-      const res = await createInvestment(investment);
-      setInvestments(prev => {
-        const newState = [...prev, res.data];
-        return newState;
-      });
-      return res.data;
+      const newInvestment = await createInvestment(investment);
+      setInvestments(prev => [...prev, newInvestment]);
+      showNotification('Investimento adicionado com sucesso!', 'success');
+      return newInvestment;
     } catch (err) {
       setError('Erro ao adicionar investimento.');
-      // Diagnostic log for backend response
-      if (err.response) {
-        console.error('Investment API error:', err.response.data);
-      }
+      showNotification('Erro ao adicionar investimento.', 'error');
+      console.error('Investment API error:', err);
       throw err;
     }
   };
 
   const addOtherInvestment = async (investment) => {
     try {
-      const res = await createOtherInvestment(investment);
-      setOtherInvestments(prev => [...prev, res.data]);
-      return res.data;
+      const newOtherInvestment = await createOtherInvestment(investment);
+      setOtherInvestments(prev => [...prev, newOtherInvestment]);
+      showNotification('Investimento adicionado com sucesso!', 'success');
+      return newOtherInvestment;
     } catch (err) {
       setError('Erro ao adicionar outro investimento.');
-      if (err.response) {
-        console.error('Other Investment API error:', err.response.data);
-      }
+      showNotification('Erro ao adicionar outro investimento.', 'error');
+      console.error('Other Investment API error:', err);
       throw err;
     }
   };
 
   const editInvestment = async (id, updates) => {
     try {
-      const res = await updateInvestment(id, updates);
-      setInvestments(prev => prev.map(inv => inv.id === id ? res.data : inv));
-      return res.data;
+      await updateInvestment(id, updates);
+      const updatedInvestment = { ...investments.find(inv => inv.id === id), ...updates };
+      setInvestments(prev => prev.map(inv => inv.id === id ? updatedInvestment : inv));
+      showNotification('Investimento atualizado com sucesso!', 'success');
+      return updatedInvestment;
     } catch (err) {
       setError('Erro ao atualizar investimento.');
+      showNotification('Erro ao atualizar investimento.', 'error');
       throw err;
     }
   };
@@ -84,9 +87,11 @@ export const InvestmentProvider = ({ children }) => {
     setInvestments(prev => prev.filter(inv => inv.id !== id));
     try {
       await deleteInvestment(id);
+      showNotification('Investimento removido com sucesso!', 'success');
     } catch {
       setInvestments(original);
       setError('Erro ao excluir investimento.');
+      showNotification('Erro ao excluir investimento.', 'error');
     }
   };
 
@@ -95,9 +100,12 @@ export const InvestmentProvider = ({ children }) => {
     setOtherInvestments(prev => prev.filter(inv => inv.id !== id));
     try {
       await deleteOtherInvestment(id);
-    } catch {
+      showNotification('Investimento removido com sucesso!', 'success');
+    }
+ catch {
       setOtherInvestments(original);
       setError('Erro ao excluir outro investimento.');
+      showNotification('Erro ao excluir outro investimento.', 'error');
     }
   };
 

@@ -1,16 +1,25 @@
-import axiosInstance from './axios';
+import { httpsCallable } from "firebase/functions";
+import { functions } from "./firebase";
+
+const processStatementFunction = httpsCallable(functions, 'transactions-processStatement');
 
 export const processStatement = async (file) => {
-  const formData = new FormData();
-  formData.append('statement', file);
-
-  const response = await axiosInstance.post('/api/process-statement/', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async () => {
+      try {
+        const base64File = reader.result.split(',')[1];
+        const result = await processStatementFunction({ file: base64File });
+        resolve(result.data);
+      } catch (error) {
+        console.error("Error processing statement:", error);
+        reject(error);
+      }
+    };
+    reader.onerror = (error) => {
+      console.error("Error reading file:", error);
+      reject(error);
+    };
   });
-
-  console.log("backend response from document", response.data);
-
-  return response.data;
 };
