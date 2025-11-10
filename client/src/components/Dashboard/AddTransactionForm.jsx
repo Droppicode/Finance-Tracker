@@ -46,7 +46,7 @@ const AddTransactionForm = () => {
     }
   };
 
-  const categoryOptions = categories.map(c => ({ value: c.id, label: c.name }));
+  const categoryOptions = (categories || []).map(c => ({ value: c.id, label: c.name }));
   const typeOptions = [
     { value: 'debit', label: 'Despesa' },
     { value: 'credit', label: 'Receita' },

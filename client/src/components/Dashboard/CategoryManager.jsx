@@ -17,7 +17,7 @@ export default function CategoryManager({ categories, onSelectCategory, onAddCat
   return (
     <div className="absolute z-10 min-w-max bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2">
       <div className="max-h-40 overflow-y-auto mb-2">
-        {categories.map(c => (
+        {(categories || []).map(c => (
           <div key={c.value} className="flex justify-between items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer" onClick={() => onSelectCategory(c.value)}>
             <span className="dark:text-white">{c.label}</span>
             <button onClick={(e) => { e.stopPropagation(); onRemoveCategory(c.value); }} className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 ml-4">

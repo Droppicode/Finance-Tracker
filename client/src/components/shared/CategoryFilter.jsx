@@ -30,7 +30,7 @@ const CategoryFilter = ({ allCategories, selectedIds, onToggleCategory }) => {
       {isOpen && (
         <div className="absolute z-10 mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg">
           <ul className="py-1 max-h-72 overflow-y-auto">
-            {allCategories.map(category => {
+            {(allCategories || []).map(category => {
               const isSelected = selectedIds.includes(category.id);
               return (
                 <li 

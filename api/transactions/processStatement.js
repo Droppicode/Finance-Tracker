@@ -1,5 +1,8 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 2000; // 2 seconds
+
 const extractTransactionsFromText = async (text) => {
   console.log("extractTransactionsFromText called with text (first 200 chars):", text.substring(0, 200));
   const apiKey = process.env.GEMINI_API_KEY; // Use process.env for Vercel
@@ -55,22 +58,31 @@ const extractTransactionsFromText = async (text) => {
     `;
 
   let responseText;
-  try {
-    console.log("Calling Gemini API for transaction extraction...");
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    responseText = response.text();
-    console.log("Received response from Gemini API.");
+  for (let i = 0; i < MAX_RETRIES; i++) {
+    try {
+      console.log(`Attempt ${i + 1} of ${MAX_RETRIES} to call Gemini API...`);
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      responseText = response.text();
+      console.log("Received response from Gemini API.");
 
-    const replacedResponse = responseText.trim().replace("json", "");
-    const cleanedResponse = replacedResponse.replace(/`/g, "");
+      const replacedResponse = responseText.trim().replace("json", "");
+      const cleanedResponse = replacedResponse.replace(/`/g, "");
 
-    return JSON.parse(cleanedResponse);
-  } catch (e) {
-    console.error("Failed to parse JSON from Gemini response:", e); // Replace logger.error
-    console.error("Raw response text:", responseText); // Replace logger.error
-    throw new Error("Could not parse transactions from statement.", { cause: e });
+      return JSON.parse(cleanedResponse);
+    } catch (e) {
+      console.error(`Attempt ${i + 1} failed:`, e);
+      if (e.cause?.message?.includes("503 Service Unavailable") && e.cause?.message?.includes("model is overloaded") && i < MAX_RETRIES - 1) {
+        console.log(`Retrying in ${RETRY_DELAY_MS / 1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+      } else {
+        console.error("Failed to parse JSON from Gemini response:", e);
+        console.error("Raw response text:", responseText);
+        throw new Error("Could not parse transactions from statement.", { cause: e });
+      }
+    }
   }
+  throw new Error("Failed to extract transactions after multiple retries.");
 };
 
 module.exports = async (req, res) => {

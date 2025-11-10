@@ -103,7 +103,7 @@ export default function TransactionsCard({
                     <span>{t.category?.name || 'Selecione uma categoria...'}</span>
                     <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                   </div>
-                  {editingCategoryId === t.id && (
+                  {editingCategoryId === t.id && categories && (
                     <CategoryManager
                       categories={categories.map(c => ({ value: c.id, label: c.name }))}
                       onSelectCategory={(category) => handleCategoryChange(t.id, category)}
