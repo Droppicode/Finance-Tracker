@@ -1,25 +1,15 @@
-import { httpsCallable } from "firebase/functions";
-import { functions } from "./firebase";
+import axios from 'axios';
 
-const processStatementFunction = httpsCallable(functions, 'transactions-processStatement');
+const BASE_URL = '/api/transactions'; // Base path for Vercel Transactions functions
 
-export const processStatement = async (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = async () => {
-      try {
-        const base64File = reader.result.split(',')[1];
-        const result = await processStatementFunction({ file: base64File });
-        resolve(result.data);
-      } catch (error) {
-        console.error("Error processing statement:", error);
-        reject(error);
-      }
-    };
-    reader.onerror = (error) => {
-      console.error("Error reading file:", error);
-      reject(error);
-    };
-  });
+export const processStatement = async (text) => {
+  console.log("Calling processStatement API with text (first 200 chars):", text.substring(0, 200));
+  try {
+    const response = await axios.post(`${BASE_URL}/processStatement`, { text });
+    console.log("Received response from processStatement API.");
+    return response.data.data; // Vercel functions return { data: ... }
+  } catch (error) {
+    console.error("Error processing statement:", error);
+    throw error;
+  }
 };

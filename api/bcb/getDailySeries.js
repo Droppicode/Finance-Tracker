@@ -1,0 +1,61 @@
+const axios = require("axios");
+const { format, subDays, addDays } = require("date-fns");
+
+const BASE_URL = "https://api.bcb.gov.br/dados/serie";
+
+const _makeRequest = async (seriesId, params = {}) => {
+  let url = `${BASE_URL}/bcdata.sgs.${seriesId}/dados`;
+
+  if (!params || (!params.dataInicial && !params.dataFinal)) {
+    url += "/ultimos/1";
+  }
+
+  params["formato"] = "json";
+
+  try {
+    const response = await axios.get(url, { params });
+    return response.data;
+  } catch (error) {
+    console.error("Error making request to BCB API:", error);
+    throw new Error("Error making request to BCB API", { cause: error });
+  }
+};
+
+const getDailySeries = async (seriesId, startDateStr, endDateStr) => {
+  const start = new Date(startDateStr);
+  const end = new Date(endDateStr);
+
+  const bufferedStartDate = subDays(start, 5);
+  const bufferedEndDate = addDays(end, 5);
+
+  const formattedStartDate = format(bufferedStartDate, "dd/MM/yyyy");
+  const formattedEndDate = format(bufferedEndDate, "dd/MM/yyyy");
+
+  const params = {
+    "dataInicial": formattedStartDate,
+    "dataFinal": formattedEndDate,
+  };
+  return await _makeRequest(seriesId, params);
+};
+
+module.exports = async (req, res) => {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  const { seriesId, startDate, endDate } = req.body;
+
+  if (!seriesId || !startDate || !endDate) {
+    return res.status(400).json({
+      error: "Missing required parameters: seriesId, startDate, endDate",
+    });
+  }
+
+  try {
+    const result = await getDailySeries(seriesId, startDate, endDate);
+    res.status(200).json({ data: result });
+  } catch (error) {
+    console.error("Error in getDailySeries Vercel function:", error);
+    res.status(500).json({ error: error.message, details: error.cause?.message });
+  }
+};

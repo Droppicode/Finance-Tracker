@@ -3,9 +3,9 @@ import Card from '../shared/Card';
 import { useRates } from '../../context/RatesContext';
 import { Trash2, Calendar, Landmark, TrendingUp, Loader } from 'lucide-react';
 
-const DetailItem = ({ icon: Icon, label, value }) => (
+const DetailItem = ({ icon: IconComponent, label, value }) => (
   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-    <Icon className="w-4 h-4 text-gray-400" />
+    {IconComponent && <IconComponent className="w-4 h-4 text-gray-400" />}
     <span className="font-medium">{label}:</span>
     <span>{value}</span>
   </div>

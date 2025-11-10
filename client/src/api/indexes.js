@@ -1,19 +1,17 @@
-import { httpsCallable } from "firebase/functions";
-import { functions } from "./firebase";
+import axios from 'axios';
 
-const getDailySeriesFunction = httpsCallable(functions, 'bcb-getDailySeries');
-const getMonthlySeriesFunction = httpsCallable(functions, 'bcb-getMonthlySeries');
+const BASE_URL = '/api/bcb'; // Base path for Vercel BCB functions
 
 export const getRates = async (seriesId, startDate, endDate, periodicity) => {
   try {
     const params = { seriesId, startDate, endDate };
-    let result;
+    let response;
     if (periodicity === 'daily') {
-      result = await getDailySeriesFunction(params);
+      response = await axios.post(`${BASE_URL}/getDailySeries`, params);
     } else { // monthly
-      result = await getMonthlySeriesFunction(params);
+      response = await axios.post(`${BASE_URL}/getMonthlySeries`, params);
     }
-    return result.data;
+    return response.data.data; // Vercel functions return { data: ... }
   } catch (error) {
     console.error(`Error fetching rates for series ${seriesId}:`, error);
     throw error;

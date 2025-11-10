@@ -1,25 +1,24 @@
-import { httpsCallable } from "firebase/functions";
-import { functions } from "./firebase";
+import axios from 'axios';
 
-const searchSymbolFunction = httpsCallable(functions, 'brapi-searchSymbol');
-const getQuoteFunction = httpsCallable(functions, 'brapi-getQuote');
+const BASE_URL = '/api/brapi'; // Base path for Vercel Brapi functions
 
 export const searchSymbol = async (symbol) => {
-    try {
-        const result = await searchSymbolFunction({ symbol });
-        return result.data;
-    } catch (error) {
-        console.error("Error calling searchSymbol function:", error);
-        throw error;
-    }
+  try {
+    const response = await axios.post(`${BASE_URL}/searchSymbol`, { symbol });
+    return response.data.data; // Vercel functions return { data: ... }
+  } catch (error) {
+    console.error("Error searching symbol:", error);
+    throw error;
+  }
 };
 
 export const getQuote = async (symbol, range, interval) => {
-    try {
-        const result = await getQuoteFunction({ symbol, range, interval });
-        return result.data;
-    } catch (error) {
-        console.error("Error calling getQuote function:", error);
-        throw error;
-    }
+  try {
+    const response = await axios.post(`${BASE_URL}/getQuote`, { symbol, range, interval });
+    return response.data.data; // Vercel functions return { data: ... }
+  } catch (error) {
+    console.error("Error getting quote:", error);
+    throw error;
+  }
 };
+

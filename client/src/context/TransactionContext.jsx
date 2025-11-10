@@ -5,6 +5,7 @@ import { getTransactions, createTransaction, updateTransaction, deleteTransactio
 import { getCategories, createCategory, deleteCategory } from '../api/categories';
 import { processStatement } from '../api/statement';
 import { getProfile, updateProfile } from '../api/profile';
+import { extractTextFromPDF } from '../api/pdfExtractor'; // Import the new PDF extractor
 
 const TransactionContext = createContext();
 
@@ -64,7 +65,7 @@ export const TransactionProvider = ({ children }) => {
       setCategories([]);
       setLoading(false);
     }
-  }, [isAuthenticated, utilsLoading, user]);
+  }, [isAuthenticated, utilsLoading, user, showNotification]);
 
   // Debounced effect to save preferences to profile
   useEffect(() => {
@@ -82,7 +83,7 @@ export const TransactionProvider = ({ children }) => {
     return () => {
       clearTimeout(handler);
     };
-  }, [selectedCategoryIds, isAuthenticated, loading, utilsLoading]);
+  }, [selectedCategoryIds, isAuthenticated, loading, utilsLoading, showNotification]);
 
   const filteredTransactions = useMemo(() => {
     if (!startDate || !endDate) return [];
@@ -116,15 +117,22 @@ export const TransactionProvider = ({ children }) => {
   };
 
   const handleProcessStatement = async (file) => {
+    console.log("Starting handleProcessStatement for file:", file.name);
     try {
-      const newTransactions = await processStatement(file);
+      showNotification('Processando extrato...', 'info');
+      const extractedText = await extractTextFromPDF(file); // Extract text from PDF
+      console.log("PDF text extracted. Sending to API...");
+      const newTransactions = await processStatement(extractedText); // Pass extracted text to API
+      console.log("API call for processStatement successful. New transactions received:", newTransactions.length);
       if (newTransactions) {
         setTransactions(prev => [...prev, ...newTransactions].sort((a, b) => new Date(b.date) - new Date(a.date)));
       }
       const categoriesRes = await getCategories();
       setCategories(categoriesRes.data);
+      showNotification('Extrato processado e transações adicionadas!', 'success');
     } catch (err) {
       console.error("Error processing statement:", err);
+      showNotification('Erro ao processar extrato.', 'error');
       throw err;
     }
   };

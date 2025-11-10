@@ -38,7 +38,7 @@ export const InvestmentProvider = ({ children }) => {
       }
     };
     fetchData();
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, showNotification]);
 
   const addInvestment = async (investment) => {
     try {
