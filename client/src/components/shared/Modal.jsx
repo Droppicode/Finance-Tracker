@@ -1,12 +1,12 @@
 import React from 'react';
 import { X } from 'lucide-react';
 
-const Modal = ({ isOpen, onClose, children, title }) => {
+const Modal = ({ isOpen, onClose, children, title, dialogClassName }) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto outline-none focus:outline-none bg-[rgba(17,24,39,0.5)] dark:bg-[rgba(17,24,39,0.75)]">
-      <div className="relative w-full m-4">
+      <div className={`relative w-full m-4 ${dialogClassName || 'max-w-lg mx-auto'}`}>
         {/*content*/}
         <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white dark:bg-gray-800 outline-none focus:outline-none">
           {/*header*/}

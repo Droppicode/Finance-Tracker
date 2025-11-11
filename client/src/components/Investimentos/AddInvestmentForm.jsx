@@ -1,43 +1,78 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react'; // Importe useCallback
+import { useNavigate, useLocation } from 'react-router-dom';
 import Card from '../shared/Card';
 import Button from '../shared/Button';
 import Select from '../shared/Select';
 import Input from '../shared/Input';
-import InvestmentSearchPopover from './InvestmentSearchPopover';
+import InvestmentSearchModal from './InvestmentSearchModal';
 import OtherInvestmentForm from './OtherInvestmentForm';
-import { Plus } from 'lucide-react';
+import { getQuote } from '../../api/brapi';
+import { Plus, Info } from 'lucide-react';
 
-export default function AddInvestmentForm({ addInvestment, loading, investmentOptions, onSelectInvestment }) {
+export default function AddInvestmentForm({ addInvestment, loading, investmentOptions }) {
   const [assetName, setAssetName] = useState("");
   const [assetQuantity, setAssetQuantity] = useState("");
   const [assetPrice, setAssetPrice] = useState(null);
   const [isPriceLoading, setIsPriceLoading] = useState(false);
   const [assetType, setAssetType] = useState("");
-  const [showSearchPopover, setShowSearchPopover] = useState(false);
-  const searchPopoverRef = useRef(null);
   const [isEditingPrice, setIsEditingPrice] = useState(false);
   const [formType, setFormType] = useState('market');
   const [error, setError] = useState(null);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [selectedInvestment, setSelectedInvestment] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleSelectInvestment = async (investment) => {
+  const processedLocationKey = useRef(null); 
+
+  const handleSelectInvestment = useCallback(async (investment) => {    
     setAssetName(`${investment.stock} - ${investment.name}`);
-    setShowSearchPopover(false);
-    setIsPriceLoading(true);
-    setAssetPrice(null);
+    setAssetType(investment.type);
+    setSelectedInvestment(investment);
+    setIsSearchModalOpen(false);
     setIsEditingPrice(false);
     setError(null);
-    try {
-      const quote = await onSelectInvestment(investment);
-      if (quote) {
-        setAssetPrice(quote.regularMarketPrice);
-        setAssetType(investment.type);
+
+    if (investment.regularMarketPrice !== null && investment.regularMarketPrice !== undefined) {
+      setAssetPrice(investment.regularMarketPrice);
+    } else {
+      setIsPriceLoading(true);
+      try {
+        const quote = await getQuote(investment.stock);
+        if (quote) {
+          setAssetPrice(quote.regularMarketPrice);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar cotação do ativo:", error);
+      } finally {
+        setIsPriceLoading(false);
       }
-    } catch (error) {
-      console.error("Erro ao buscar cotação do ativo:", error);
-    } finally {
-      setIsPriceLoading(false);
     }
-  };
+  }, [setAssetName, setAssetType, setSelectedInvestment, setIsSearchModalOpen, setIsEditingPrice, setError, setAssetPrice, setIsPriceLoading]);
+
+  useEffect(() => {
+    const { state, key, pathname } = location; 
+
+    if (state?.fromDetailsPage && state?.asset) {
+      
+      if (processedLocationKey.current === key) return; 
+  
+      processedLocationKey.current = key;
+
+      const processNavigation = async () => {
+        await handleSelectInvestment(state.asset);
+        
+        navigate(pathname, { replace: true, state: {} });
+      };
+
+      processNavigation();
+    }
+  
+  }, [
+    handleSelectInvestment, 
+    navigate, 
+    location
+  ]);
 
   const handleAddInvestment = async (e) => {
     e.preventDefault();
@@ -73,6 +108,7 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
     setAssetQuantity('');
     setAssetPrice(null);
     setAssetType('');
+    setSelectedInvestment(null);
   };
 
   return (
@@ -91,58 +127,55 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
             <Input
               placeholder="Ex: Tesouro Selic 2029, MXRF11"
               value={assetName}
-              onChange={(e) => {
-                setAssetName(e.target.value);
-                setShowSearchPopover(true);
-                setError(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && searchPopoverRef.current) {
-                  e.preventDefault();
-                  searchPopoverRef.current();
-                }
-              }}
+              onFocus={() => setIsSearchModalOpen(true)}
+              readOnly
             />
-            {showSearchPopover && (
-              <InvestmentSearchPopover
-                searchTerm={assetName}
-                onSearchSubmit={searchPopoverRef}
-                onSelectInvestment={handleSelectInvestment}
-                onClose={() => setShowSearchPopover(false)}
-              />
-            )}
           </div>
           {isPriceLoading && <p className="text-sm text-gray-500 dark:text-gray-400">Carregando preço...</p>}
           {assetPrice !== null && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preço por unidade</label>
-              {isEditingPrice ? (
-                <Input
-                  type="number"
-                  step="any"
-                  placeholder="0.00"
-                  value={assetPrice}
-                  onChange={(e) => { setAssetPrice(e.target.value); setError(null); }}
-                  onBlur={() => setIsEditingPrice(false)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      e.target.closest('form').requestSubmit();
-                    }
-                  }}
-                  autoFocus
-                  disabled={isPriceLoading}
-                />
-              ) : (
-                <div
-                  className="w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 border border-gray-300 dark:border-gray-600"
-                  onClick={() => setIsEditingPrice(true)}
-                >
-                  <p className="text-gray-900 dark:text-white">
-                    {parseFloat(assetPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </p>
+              <div className="flex items-center gap-2">
+                <div className="grow">
+                  {isEditingPrice ? (
+                    <Input
+                      type="number"
+                      step="any"
+                      placeholder="0.00"
+                      value={assetPrice}
+                      onChange={(e) => { setAssetPrice(e.target.value); setError(null); }}
+                      onBlur={() => setIsEditingPrice(false)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          e.target.closest('form').requestSubmit();
+                        }
+                      }}
+                      autoFocus
+                      disabled={isPriceLoading}
+                    />
+                  ) : (
+                    <div
+                      className="w-full p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 border border-gray-300 dark:border-gray-600"
+                      onClick={() => setIsEditingPrice(true)}
+                    >
+                      <p className="text-gray-900 dark:text-white">
+                        {parseFloat(assetPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )}
+                {selectedInvestment && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate(`/investimentos/${selectedInvestment.stock}`, { state: { fromAddInvestmentForm: true, asset: selectedInvestment } })}
+                    title="Ver detalhes do ativo"
+                  >
+                    <Info className="w-5 h-5" />
+                  </Button>
+                )}
+              </div>
             </div>
           )}
           <div>
@@ -173,6 +206,11 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
       ) : (
         <OtherInvestmentForm />
       )}
+      <InvestmentSearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        onSelectInvestment={handleSelectInvestment}
+      />
     </Card>
   );
 }

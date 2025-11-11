@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Card from '../shared/Card';
 import Button from '../shared/Button';
 import ToggleSwitch from '../shared/ToggleSwitch';
@@ -16,6 +17,7 @@ export default function SavedInvestmentsCard({
   updateDates,
   labelFromType
 }) {
+  const navigate = useNavigate();
   const [groupByAsset, setGroupByAsset] = useState(false);
   const [filterType, setFilterType] = useState([]);
   const [expandedGroups, setExpandedGroups] = useState([]);
@@ -28,6 +30,19 @@ export default function SavedInvestmentsCard({
         ? prev.filter(s => s !== symbol)
         : [...prev, symbol]
     );
+  };
+
+  const handleInvestmentClick = (inv, isGrouped) => {
+    if (isGrouped) {
+      toggleGroup(inv.id);
+    } else {
+      navigate(`/investimentos/${inv.symbol}`);
+    }
+  };
+
+  const handleRemoveClick = (e, id) => {
+    e.stopPropagation();
+    removeInvestment(id);
   };
 
   const processedInvestments = useMemo(() => {
@@ -116,12 +131,12 @@ export default function SavedInvestmentsCard({
               return (
                 <div key={inv.id}>
                   <div
-                    className={`flex justify-between items-center p-3 rounded-lg transition-colors duration-200 ${
+                    className={`flex justify-between items-center p-3 rounded-lg transition-colors duration-200 cursor-pointer ${
                       isGrouped
-                        ? 'bg-blue-50 dark:bg-blue-900/50 cursor-pointer'
+                        ? 'bg-blue-50 dark:bg-blue-900/50'
                         : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50'
                       }`}
-                    onClick={() => isGrouped && toggleGroup(inv.id)}
+                    onClick={() => handleInvestmentClick(inv, isGrouped)}
                   >
                     <div className="flex items-center gap-4 grow">
                       {isGrouped && (
@@ -150,7 +165,7 @@ export default function SavedInvestmentsCard({
                         <span className="text-xs w-24 text-center px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">{labelFromType(inv.type)}</span>
                       )}
                       <button
-                        onClick={() => removeInvestment(inv.id)}
+                        onClick={(e) => handleRemoveClick(e, inv.id)}
                         className="text-gray-400 hover:text-red-500 dark:hover:text-red-400"
                         aria-label="Remover compra"
                       >
@@ -180,7 +195,7 @@ export default function SavedInvestmentsCard({
                               </div>
                               <span className="w-24"></span>
                               <button
-                                onClick={() => removeInvestment(originalInv.id)}
+                                onClick={(e) => handleRemoveClick(e, originalInv.id)}
                                 className="text-gray-400 hover:text-red-500 dark:hover:text-red-400"
                                 aria-label="Remover compra"
                               >

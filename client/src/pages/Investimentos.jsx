@@ -1,14 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import Header from '../components/shared/Header';
 import Card from '../components/shared/Card';
+import Modal from '../components/shared/Modal';
+import FAB from '../components/shared/FAB';
 import OtherInvestmentCard from '../components/Investimentos/OtherInvestmentCard';
 import PortfolioChartCard from '../components/Investimentos/PortfolioChartCard';
 import AddInvestmentForm from '../components/Investimentos/AddInvestmentForm';
 import SavedInvestmentsCard from '../components/Investimentos/SavedInvestmentsCard';
-import InvestmentDetailsCard from '../components/Investimentos/InvestmentDetailsCard';
 import { useInvestments } from '../context/InvestmentContext';
 import { useUtils } from '../context/UtilsContext';
-import { getQuote } from '../api/brapi';
 
 const investmentOptions = [
   { value: 'stock', label: 'Ações' },
@@ -25,8 +26,28 @@ const labelFromType = (type) => investmentOptions.find(o => o.value === type)?.l
 export default function InvestimentosPage() {
   const { investments, otherInvestments, addInvestment, removeInvestment, removeOtherInvestment, loading } = useInvestments();
   const { startDate, endDate, updateDates } = useUtils();
-  const [assetQuote, setAssetQuote] = useState(null);
-  const [showChart, setShowChart] = useState(false);
+  const [isAddInvestmentModalOpen, setIsAddInvestmentModalOpen] = useState(false);
+  const location = useLocation();
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 1024);
+
+  useEffect(() => {
+    const handleResize = () => {
+      console.log("resizing")
+      setIsMobileView(window.innerWidth < 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (location.state?.fromDetailsPage) {
+      if (isMobileView) { // Use the state variable here
+        setIsAddInvestmentModalOpen(true);
+      }
+      // If it's desktop, the desktop form will handle it.
+    }
+    if(!isMobileView) setIsAddInvestmentModalOpen(false);
+  }, [location.state, isMobileView]); // Add isMobileView to dependencies
 
   const totalInvested = useMemo(() => {
     return investments.reduce((acc, { quantity, price }) => acc + (parseFloat(quantity) * parseFloat(price)), 0);
@@ -41,37 +62,24 @@ export default function InvestimentosPage() {
     return Object.entries(map).map(([type, value]) => ({ name: labelFromType(type), value }));
   }, [investments]);
 
-  const handleSelectInvestment = async (investment) => {
-    try {
-      const quote = await getQuote(investment.stock);
-      setAssetQuote(quote);
-      return quote;
-    } catch (error) {
-      console.error("Erro ao buscar cotação do ativo:", error);
-      return null;
-    }
-  };
-
   return (
     <div>
       <Header title="Carteira de Investimentos" />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div className="lg:col-span-1">
-          <AddInvestmentForm addInvestment={addInvestment} loading={loading} investmentOptions={investmentOptions} onSelectInvestment={handleSelectInvestment} />
-        </div>
-
-        {assetQuote ? (
-          <InvestmentDetailsCard assetQuote={assetQuote} showChart={showChart} setShowChart={setShowChart} />
-        ) : (
-          <div className="lg:col-span-2">
-            <PortfolioChartCard chartData={chartData} totalInvested={totalInvested} />
+        {!isMobileView && ( // Conditionally render desktop form
+          <div className="hidden lg:block lg:col-span-1">
+            <AddInvestmentForm addInvestment={addInvestment} loading={loading} investmentOptions={investmentOptions} />
           </div>
         )}
+
+        <div className="lg:col-span-2">
+          <PortfolioChartCard chartData={chartData} totalInvested={totalInvested} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-        <div className={assetQuote ? "lg:col-span-2" : "lg:col-span-3"}>
+        <div className={"lg:col-span-3"}>
           <div className="h-[38rem] lg:relative lg:col-span-2">
             <SavedInvestmentsCard
               investments={investments}
@@ -85,12 +93,6 @@ export default function InvestimentosPage() {
             />
           </div>
         </div>
-
-        {assetQuote && (
-          <div className="lg:col-span-1">
-            <PortfolioChartCard chartData={chartData} totalInvested={totalInvested} />
-          </div>
-        )}
       </div>
 
       <div className="mt-6">
@@ -111,6 +113,23 @@ export default function InvestimentosPage() {
           )}
         </Card>
       </div>
+
+      {/* FAB for mobile */}
+      <FAB onClick={() => setIsAddInvestmentModalOpen(true)} className="lg:hidden" />
+
+      {/* Add Investment Modal for mobile */}
+      <Modal
+        isOpen={isAddInvestmentModalOpen}
+        onClose={() => setIsAddInvestmentModalOpen(false)}
+        title="Adicionar Novo Investimento"
+      >
+        <AddInvestmentForm 
+          addInvestment={addInvestment} 
+          loading={loading} 
+          investmentOptions={investmentOptions}
+          onClose={() => setIsAddInvestmentModalOpen(false)} 
+        />
+      </Modal>
     </div>
   );
 }

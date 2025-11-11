@@ -10,6 +10,7 @@ import { getProfile, updateProfile } from './api/profile';
 import DashboardPage from './pages/Dashboard';
 import GastosPage from './pages/Gastos';
 import InvestimentosPage from './pages/Investimentos';
+import InvestmentDetailPage from './pages/InvestmentDetailPage';
 import LoginPage from './pages/LoginPage';
 import Sidebar from './components/Sidebar';
 import Notification from './components/shared/Notification';
@@ -103,6 +104,7 @@ const AppRoutes = () => {
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/gastos" element={<GastosPage />} />
                 <Route path="/investimentos" element={<InvestimentosPage />} />
+                <Route path="/investimentos/:symbol" element={<InvestmentDetailPage />} />
               </Routes>
             </MainLayout>
           </PrivateRoute>
