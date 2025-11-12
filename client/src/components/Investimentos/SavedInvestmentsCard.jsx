@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Card from '../shared/Card';
 import Button from '../shared/Button';
 import ToggleSwitch from '../shared/ToggleSwitch';
@@ -19,28 +18,15 @@ export default function SavedInvestmentsCard({
   updateDates,
   labelFromType
 }) {
-  const navigate = useNavigate();
   const [groupByAsset, setGroupByAsset] = useState(false);
   const [filterType, setFilterType] = useState([]);
-  const [expandedGroups, setExpandedGroups] = useState([]);
+  const [expandedId, setExpandedId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
-  const toggleGroup = (symbol) => {
-    setExpandedGroups(prev =>
-      prev.includes(symbol)
-        ? prev.filter(s => s !== symbol)
-        : [...prev, symbol]
-    );
-  };
-
-  const handleInvestmentClick = (inv, isGrouped) => {
-    if (isGrouped) {
-      toggleGroup(inv.id);
-    } else {
-      navigate(`/investimentos/${inv.symbol}`);
-    }
+  const handleInvestmentClick = (id) => {
+    setExpandedId(prevId => (prevId === id ? null : id));
   };
 
   const handleRemoveClick = (e, id) => {
@@ -132,85 +118,50 @@ export default function SavedInvestmentsCard({
         ) : (
           <div className="space-y-2 mt-4">
             {paginatedInvestments.map(inv => {
-              const isGrouped = groupByAsset && inv.originalIds?.length > 1;
-              const isExpanded = expandedGroups.includes(inv.id);
+              const isExpanded = expandedId === inv.id;
 
               return (
                 <div key={inv.id}>
                   <div
-                    className={`flex justify-between items-center p-3 rounded-lg transition-colors duration-200 cursor-pointer ${
-                      isGrouped
-                        ? 'bg-blue-50 dark:bg-blue-900/50'
-                        : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50'
-                      }`}
-                    onClick={() => handleInvestmentClick(inv, isGrouped)}
+                    className="flex justify-between items-center p-3 rounded-lg transition-colors duration-200 cursor-pointer bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                    onClick={() => handleInvestmentClick(inv.id)}
                   >
-                    <div className="flex items-center gap-4 grow">
-                      {isGrouped && (
-                        <ChevronDown className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                      )}
-                      <div>
-                        <span className="font-bold text-gray-800 dark:text-gray-100">{inv.symbol}</span>
-                        {isGrouped && (
-                          <span className="ml-2 text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">
-                            {inv.originalIds.length} compras
-                          </span>
-                        )}
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{inv.name}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <p className="font-medium text-gray-800 dark:text-gray-100">
-                          {(inv.quantity * inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {parseFloat(inv.quantity).toFixed(2)} x {parseFloat(inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </p>
-                      </div>
+                    {/* Always visible row */}
+                    <div className="flex-1 grid grid-cols-3 items-center gap-2">
+                      <span className="font-bold text-gray-800 dark:text-gray-100 truncate">{inv.symbol}</span>
+                      <p className="font-medium text-gray-800 dark:text-gray-100 text-center">
+                        {(inv.quantity * inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </p>
                       {inv.type && (
-                        <span className="text-xs w-24 text-center px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">{labelFromType(inv.type)}</span>
+                        <span className="text-xs text-center px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 truncate">{labelFromType(inv.type)}</span>
                       )}
-                      <button
-                        onClick={(e) => handleRemoveClick(e, inv.id)}
-                        className="text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                        aria-label="Remover compra"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
                     </div>
+                    <ChevronDown className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ml-2 ${isExpanded ? 'rotate-180' : ''}`} />
                   </div>
+
+                  {/* Collapsible details */}
                   {isExpanded && (
-                    <div className="pl-10 pt-2 pb-2 space-y-2">
-                      {investments
-                        .filter(originalInv => originalInv.symbol === inv.symbol)
-                        .map(originalInv => (
-                          <div key={originalInv.id} className="flex justify-between items-center p-2 rounded-lg bg-gray-100 dark:bg-gray-700/50">
-                            <div className="flex items-center gap-4 grow">
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                {new Date(originalInv.purchase_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-6">
-                              <div className="text-right">
-                                <p className="font-medium text-gray-800 dark:text-gray-100">
-                                  {(originalInv.quantity * originalInv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                </p>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                  {parseFloat(originalInv.quantity).toFixed(2)} x {parseFloat(originalInv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                </p>
-                              </div>
-                              <span className="w-24"></span>
-                              <button
-                                onClick={(e) => handleRemoveClick(e, originalInv.id)}
-                                className="text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                                aria-label="Remover compra"
-                              >
-                                <Trash2 className="w-5 h-5" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
+                    <div className="p-3 bg-gray-100 dark:bg-gray-700/50 rounded-b-lg">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{inv.name}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            {parseFloat(inv.quantity).toFixed(2)} x {parseFloat(inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </p>
+                          {groupByAsset && inv.originalIds && (
+                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              {inv.originalIds.length} {inv.originalIds.length > 1 ? 'compras' : 'compra'}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={(e) => handleRemoveClick(e, inv.id)}
+                          className="text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                          aria-label="Remover investimento"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
