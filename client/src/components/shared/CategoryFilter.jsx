@@ -4,7 +4,7 @@ import Button from './Button';
 
 const CategoryFilter = ({
   options,
-  selectedItems,
+  selectedItems = [],
   onChange,
   filterName = 'Categorias'
 }) => {

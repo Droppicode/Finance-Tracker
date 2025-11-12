@@ -38,7 +38,7 @@ export default function PortfolioChartCard({ chartData, totalInvested }) {
   return (
     <Card className="h-full">
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Alocação da Carteira</h2>
+        <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Carteira</h2>
         <div className="text-right">
           <span className="text-sm text-gray-500 dark:text-gray-400">Total Investido</span>
           <p className="text-2xl font-bold text-green-600 dark:text-green-500">

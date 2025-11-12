@@ -1,20 +1,30 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Header from '../components/shared/Header';
 import SpendingChartCard from '../components/Gastos/SpendingChartCard';
-import GastosFilters from '../components/Gastos/GastosFilters';
 import { useTransactions } from '../context/TransactionContext';
 import { useUtils } from '../context/UtilsContext';
+import Card from '../components/shared/Card';
+import CategoryFilter from '../components/shared/CategoryFilter';
+import DateRangePicker from '../components/shared/DateRangePicker';
+import FilterButton from '../components/shared/FilterButton';
+import FilterModal from '../components/shared/FilterModal';
 
 export default function GastosPage() {
-  const { 
-    transactions, 
-    loading, 
+  const {
+    transactions,
+    loading,
     categories,
     selectedCategoryIds,
-    onCategoryFilterChange 
+    onCategoryFilterChange,
   } = useTransactions();
 
   const { startDate, endDate, updateDates } = useUtils();
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+
+  const categoryOptions = useMemo(() =>
+    (categories || []).map(c => ({ value: c.id, label: c.name })),
+    [categories]
+  );
 
   const spendingData = useMemo(() => {
     if (!transactions) return [];
@@ -48,15 +58,62 @@ export default function GastosPage() {
   return (
     <div>
       <Header title="Análise de Gastos" />
-      
-      <GastosFilters
-        categories={categories}
+
+      {/* Filters for larger screens */}
+      <div className="hidden md:grid md:grid-cols-3 gap-4 mb-6">
+        <Card>
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Filtrar por Categoria</h3>
+          <CategoryFilter
+            options={categoryOptions}
+            selectedItems={selectedCategoryIds}
+            onChange={onCategoryFilterChange}
+            filterName="Categorias"
+          />
+        </Card>
+        <Card>
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Filtrar por Data</h3>
+          <DateRangePicker
+            startDate={startDate}
+            endDate={endDate}
+            onStartDateChange={(newStartDate) => updateDates(newStartDate, endDate)}
+            onEndDateChange={(newEndDate) => updateDates(startDate, newEndDate)}
+          />
+        </Card>
+        <Card className="bg-indigo-600 text-white">
+          <h3 className="text-sm font-medium text-indigo-200">Total Gasto (Período)</h3>
+          <p className="text-3xl font-bold">
+            {totalSpent.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          </p>
+        </Card>
+      </div>
+
+      {/* Filters for small screens */}
+      <div className="md:hidden mb-6">
+        <Card className="bg-indigo-600 text-white">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-sm font-medium text-indigo-200">Total Gasto</h3>
+              <p className="text-2xl font-bold">
+                {totalSpent.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </p>
+            </div>
+            <FilterButton onClick={() => setIsFilterModalOpen(true)} />
+          </div>
+        </Card>
+      </div>
+
+      <FilterModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        title="Filtrar Gastos"
+        allCategories={categories}
         selectedCategoryIds={selectedCategoryIds}
         onCategoryFilterChange={onCategoryFilterChange}
+        filterName="Categorias"
         startDate={startDate}
         endDate={endDate}
-        updateDates={updateDates}
-        totalSpent={totalSpent}
+        onStartDateChange={(newStartDate) => updateDates(newStartDate, endDate)}
+        onEndDateChange={(newEndDate) => updateDates(startDate, newEndDate)}
       />
 
       <SpendingChartCard spendingData={spendingData} />

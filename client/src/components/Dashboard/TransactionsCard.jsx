@@ -287,29 +287,30 @@ export default function TransactionsCard({
 
         )}
 
-            <FilterModal
+                        <FilterModal
 
-              isOpen={isFilterModalOpen}
+                          isOpen={isFilterModalOpen}
 
-              onClose={() => setIsFilterModalOpen(false)}
+                          onClose={() => setIsFilterModalOpen(false)}
 
-              allCategories={categories}
+                          title="Filtros de Transações"
 
-              selectedCategoryIds={selectedCategoryIds}
+                          allCategories={categories}
 
-              onCategoryFilterChange={onCategoryFilterChange}
+                          selectedCategoryIds={selectedCategoryIds}
 
-              startDate={startDate}
+                          onCategoryFilterChange={onCategoryFilterChange}
 
-              endDate={endDate}
+                          filterName="Categorias"
 
-              onStartDateChange={(newStartDate) => updateDates(newStartDate, endDate)}
+                          startDate={startDate}
 
-              onEndDateChange={(newEndDate) => updateDates(startDate, newEndDate)}
+                          endDate={endDate}
 
-              onApplyFilters={() => setIsFilterModalOpen(false)}
+                          onStartDateChange={(newStartDate) => updateDates(newStartDate, endDate)}
 
-            />
+                          onEndDateChange={(newEndDate) => updateDates(startDate, newEndDate)}
+                        />
 
           </Card>
 

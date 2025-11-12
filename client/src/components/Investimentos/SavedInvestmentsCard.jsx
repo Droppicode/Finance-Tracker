@@ -7,7 +7,7 @@ import CategoryFilter from '../shared/CategoryFilter';
 import DateRangePicker from '../shared/DateRangePicker';
 import { Trash2, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import FilterButton from '../shared/FilterButton';
-import InvestmentFilterModal from './InvestmentFilterModal';
+import FilterModal from '../shared/FilterModal';
 
 export default function SavedInvestmentsCard({
   investments,
@@ -101,7 +101,7 @@ export default function SavedInvestmentsCard({
     <Card className="h-full lg:absolute lg:inset-0">
       <div className="h-full overflow-y-auto">
         <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Investimentos Salvos</h3>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Investimentos</h3>
           {/* Filters for large screens */}
           <div className="hidden md:flex flex-wrap items-center gap-4">
             <ToggleSwitch
@@ -242,19 +242,21 @@ export default function SavedInvestmentsCard({
           </div>
         )}
       </div>
-      <InvestmentFilterModal
+      <FilterModal
         isOpen={isFilterModalOpen}
         onClose={() => setIsFilterModalOpen(false)}
-        groupByAsset={groupByAsset}
-        onGroupByAssetChange={(e) => setGroupByAsset(e.target.checked)}
-        investmentOptions={investmentOptions}
-        selectedTypes={filterType}
-        onFilterTypeChange={setFilterType}
+        title="Filtros de Investimentos"
+        allCategories={investmentOptions}
+        selectedCategoryIds={filterType}
+        onCategoryFilterChange={setFilterType}
+        filterName="Tipo"
         startDate={startDate}
         endDate={endDate}
         onStartDateChange={(newStartDate) => updateDates(newStartDate, endDate)}
         onEndDateChange={(newEndDate) => updateDates(startDate, newEndDate)}
-        onApplyFilters={() => setIsFilterModalOpen(false)}
+        showGroupByAsset={true}
+        groupByAssetState={groupByAsset}
+        onGroupByAssetChange={(e) => setGroupByAsset(e.target.checked)}
       />
     </Card>
   );
