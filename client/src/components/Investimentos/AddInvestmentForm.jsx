@@ -4,7 +4,7 @@ import Card from '../shared/Card';
 import Button from '../shared/Button';
 import Select from '../shared/Select';
 import Input from '../shared/Input';
-import InvestmentSearchModal from './InvestmentSearchModal';
+import InvestmentSearchPopover from './InvestmentSearchPopover';
 import OtherInvestmentForm from './OtherInvestmentForm';
 import { getQuote } from '../../api/brapi';
 import { Plus, Info } from 'lucide-react';
@@ -17,8 +17,10 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
   const [assetType, setAssetType] = useState("");
   const [isEditingPrice, setIsEditingPrice] = useState(false);
   const [error, setError] = useState(null);
-  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [showSearchPopover, setShowSearchPopover] = useState(false); // Renamed from isSearchModalOpen
   const [selectedInvestment, setSelectedInvestment] = useState(null);
+  const searchPopoverRef = useRef(null); // Ref to expose handleSearch from popover
+  const searchInputRef = useRef(null); // Ref for the search input
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -28,9 +30,10 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
     setAssetName(`${investment.stock} - ${investment.name}`);
     setAssetType(investment.type);
     setSelectedInvestment(investment);
-    setIsSearchModalOpen(false);
+    setShowSearchPopover(false); // Use setShowSearchPopover
     setIsEditingPrice(false);
     setError(null);
+    // Removed setSearchTerm('') as assetName now handles both
 
     if (investment.regularMarketPrice !== null && investment.regularMarketPrice !== undefined) {
       setAssetPrice(investment.regularMarketPrice);
@@ -47,7 +50,7 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
         setIsPriceLoading(false);
       }
     }
-  }, [setAssetName, setAssetType, setSelectedInvestment, setIsSearchModalOpen, setIsEditingPrice, setError, setAssetPrice, setIsPriceLoading]);
+  }, [setAssetName, setAssetType, setSelectedInvestment, setShowSearchPopover, setIsEditingPrice, setError, setAssetPrice, setIsPriceLoading]);
 
   useEffect(() => {
     const { state, key, pathname } = location; 
@@ -108,6 +111,7 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
     setAssetPrice(null);
     setAssetType('');
     setSelectedInvestment(null);
+    // Removed setSearchTerm('') as assetName now handles both
   };
 
   return (
@@ -117,11 +121,31 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
           <div className="relative">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ativo / Onde</label>
             <Input
+              ref={searchInputRef} // Attach ref to the Input
               placeholder="Ex: Tesouro Selic 2029, MXRF11"
-              value={assetName}
-              onFocus={() => setIsSearchModalOpen(true)}
-              readOnly
+              value={assetName} // Use assetName here
+              onChange={(e) => {
+                setAssetName(e.target.value);
+                setShowSearchPopover(true); // Use setShowSearchPopover
+                setError(null);
+              }}
+              onFocus={() => setShowSearchPopover(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchPopoverRef.current) {
+                  e.preventDefault();
+                  searchPopoverRef.current(); // Trigger search in popover
+                }
+              }}
             />
+            {showSearchPopover && ( // Only render popover when open
+              <InvestmentSearchPopover
+                searchTerm={assetName} // Pass assetName as searchTerm
+                onSearchSubmit={searchPopoverRef} // Pass the ref
+                onClose={() => setShowSearchPopover(false)} // Use setShowSearchPopover
+                onSelectInvestment={handleSelectInvestment}
+                searchInputRef={searchInputRef} // Pass the search input ref
+              />
+            )}
           </div>
           {isPriceLoading && <p className="text-sm text-gray-500 dark:text-gray-400">Carregando preço...</p>}
           {assetPrice !== null && (
@@ -198,11 +222,6 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
       ) : (
         <OtherInvestmentForm />
       )}
-      <InvestmentSearchModal
-        isOpen={isSearchModalOpen}
-        onClose={() => setIsSearchModalOpen(false)}
-        onSelectInvestment={handleSelectInvestment}
-      />
     </>
   );
 }

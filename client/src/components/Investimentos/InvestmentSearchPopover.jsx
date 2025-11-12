@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import Button from '../shared/Button';
 import { searchSymbol } from '../../api/brapi';
 
-const InvestmentSearchPopover = ({ searchTerm, onSearchSubmit, onSelectInvestment, onClose }) => {
+const InvestmentSearchPopover = ({ searchTerm, onSearchSubmit, onSelectInvestment, onClose, searchInputRef }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [lastSearchTerm, setLastSearchTerm] = useState(null);
   const [loadingSearch, setLoadingSearch] = useState(false);
@@ -11,7 +11,8 @@ const InvestmentSearchPopover = ({ searchTerm, onSearchSubmit, onSelectInvestmen
 
   useEffect(() => {
     function handleClickOutside(event) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target) &&
+          searchInputRef.current && !searchInputRef.current.contains(event.target)) {
         onClose();
       }
     }
@@ -19,7 +20,7 @@ const InvestmentSearchPopover = ({ searchTerm, onSearchSubmit, onSelectInvestmen
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [wrapperRef, onClose]);
+  }, [wrapperRef, searchInputRef, onClose]);
 
   const handleSearch = useCallback(async () => {
     if (!searchTerm.trim()) {
