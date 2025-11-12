@@ -2,9 +2,9 @@ import React, { useRef } from 'react';
 import { X } from 'lucide-react';
 
 const Modal = ({ isOpen, onClose, children, title, dialogClassName }) => {
-  if (!isOpen) return null;
+  const modalRef = useRef(); // Moved useRef to the top
 
-  const modalRef = useRef();
+  if (!isOpen) return null;
 
   const handleOverlayClick = (event) => {
     if (modalRef.current && !modalRef.current.contains(event.target)) {

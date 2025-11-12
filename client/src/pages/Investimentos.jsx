@@ -27,6 +27,7 @@ export default function InvestimentosPage() {
   const { investments, otherInvestments, addInvestment, removeInvestment, removeOtherInvestment, loading } = useInvestments();
   const { startDate, endDate, updateDates } = useUtils();
   const [isAddInvestmentModalOpen, setIsAddInvestmentModalOpen] = useState(false);
+  const [formType, setFormType] = useState('market');
   const location = useLocation();
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 1024);
 
@@ -69,7 +70,16 @@ export default function InvestimentosPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {!isMobileView && ( // Conditionally render desktop form
           <div className="hidden lg:block lg:col-span-1">
-            <AddInvestmentForm addInvestment={addInvestment} loading={loading} investmentOptions={investmentOptions} />
+            <Card className="h-full">
+              <div className="flex flex-wrap items-baseline gap-2 mb-4">
+                <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Adicionar Investimento</h2>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setFormType('market')} className={`px-3 py-1 text-sm rounded-md ${formType === 'market' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 dark:text-white'}`}>Mercado</button>
+                  <button onClick={() => setFormType('other')} className={`px-3 py-1 text-sm rounded-md ${formType === 'other' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 dark:text-white'}`}>Outros</button>
+                </div>
+              </div>
+              <AddInvestmentForm addInvestment={addInvestment} loading={loading} investmentOptions={investmentOptions} formType={formType} />
+            </Card>
           </div>
         )}
 
@@ -121,13 +131,18 @@ export default function InvestimentosPage() {
       <Modal
         isOpen={isAddInvestmentModalOpen}
         onClose={() => setIsAddInvestmentModalOpen(false)}
-        title="Adicionar Novo Investimento"
+        title="Adicionar Investimento"
       >
+        <div className="flex items-center gap-2 mb-4">
+          <button onClick={() => setFormType('market')} className={`px-3 py-1 text-sm rounded-md ${formType === 'market' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 dark:text-white'}`}>Mercado</button>
+          <button onClick={() => setFormType('other')} className={`px-3 py-1 text-sm rounded-md ${formType === 'other' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 dark:text-white'}`}>Outros</button>
+        </div>
         <AddInvestmentForm 
           addInvestment={addInvestment} 
           loading={loading} 
           investmentOptions={investmentOptions}
-          onClose={() => setIsAddInvestmentModalOpen(false)} 
+          onClose={() => setIsAddInvestmentModalOpen(false)}
+          formType={formType}
         />
       </Modal>
     </div>

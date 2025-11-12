@@ -9,14 +9,13 @@ import OtherInvestmentForm from './OtherInvestmentForm';
 import { getQuote } from '../../api/brapi';
 import { Plus, Info } from 'lucide-react';
 
-export default function AddInvestmentForm({ addInvestment, loading, investmentOptions }) {
+export default function AddInvestmentForm({ addInvestment, loading, investmentOptions, formType }) {
   const [assetName, setAssetName] = useState("");
   const [assetQuantity, setAssetQuantity] = useState("");
   const [assetPrice, setAssetPrice] = useState(null);
   const [isPriceLoading, setIsPriceLoading] = useState(false);
   const [assetType, setAssetType] = useState("");
   const [isEditingPrice, setIsEditingPrice] = useState(false);
-  const [formType, setFormType] = useState('market');
   const [error, setError] = useState(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [selectedInvestment, setSelectedInvestment] = useState(null);
@@ -112,14 +111,7 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
   };
 
   return (
-    <Card className="h-full">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Adicionar Investimento</h2>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setFormType('market')} className={`px-3 py-1 text-sm rounded-md ${formType === 'market' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 dark:text-white'}`}>Mercado</button>
-          <button onClick={() => setFormType('other')} className={`px-3 py-1 text-sm rounded-md ${formType === 'other' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 dark:text-white'}`}>Outros</button>
-        </div>
-      </div>
+    <>
       {formType === 'market' ? (
         <form onSubmit={handleAddInvestment} className="space-y-4">
           <div className="relative">
@@ -211,6 +203,6 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
         onClose={() => setIsSearchModalOpen(false)}
         onSelectInvestment={handleSelectInvestment}
       />
-    </Card>
+    </>
   );
 }
