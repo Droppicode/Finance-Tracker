@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import Card from '../shared/Card';
 import Button from '../shared/Button';
 import ToggleSwitch from '../shared/ToggleSwitch';
-import InvestmentTypeFilter from './InvestmentTypeFilter';
+import CategoryFilter from '../shared/CategoryFilter';
 import DateRangePicker from '../shared/DateRangePicker';
 import { Trash2, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import FilterButton from '../shared/FilterButton';
+import InvestmentFilterModal from './InvestmentFilterModal';
 
 export default function SavedInvestmentsCard({
   investments,
@@ -23,6 +25,7 @@ export default function SavedInvestmentsCard({
   const [expandedGroups, setExpandedGroups] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   const toggleGroup = (symbol) => {
     setExpandedGroups(prev =>
@@ -99,16 +102,18 @@ export default function SavedInvestmentsCard({
       <div className="h-full overflow-y-auto">
         <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Investimentos Salvos</h3>
-          <div className="flex flex-wrap items-center gap-4">
+          {/* Filters for large screens */}
+          <div className="hidden md:flex flex-wrap items-center gap-4">
             <ToggleSwitch
               label="Agrupar por Ativo"
               checked={groupByAsset}
               onChange={(e) => setGroupByAsset(e.target.checked)}
             />
-            <InvestmentTypeFilter
+            <CategoryFilter
               options={investmentOptions}
-              selectedTypes={filterType}
+              selectedItems={filterType}
               onChange={setFilterType}
+              filterName="Tipo"
             />
             <DateRangePicker
               startDate={startDate}
@@ -117,6 +122,8 @@ export default function SavedInvestmentsCard({
               onEndDateChange={(newEndDate) => updateDates(startDate, newEndDate)}
             />
           </div>
+          {/* Filter button for small screens */}
+          <FilterButton onClick={() => setIsFilterModalOpen(true)} className="md:hidden" />
         </div>
         {loading ? (
           <p className="text-gray-500 dark:text-gray-400">Carregando...</p>
@@ -235,6 +242,20 @@ export default function SavedInvestmentsCard({
           </div>
         )}
       </div>
+      <InvestmentFilterModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        groupByAsset={groupByAsset}
+        onGroupByAssetChange={(e) => setGroupByAsset(e.target.checked)}
+        investmentOptions={investmentOptions}
+        selectedTypes={filterType}
+        onFilterTypeChange={setFilterType}
+        startDate={startDate}
+        endDate={endDate}
+        onStartDateChange={(newStartDate) => updateDates(newStartDate, endDate)}
+        onEndDateChange={(newEndDate) => updateDates(startDate, newEndDate)}
+        onApplyFilters={() => setIsFilterModalOpen(false)}
+      />
     </Card>
   );
 }

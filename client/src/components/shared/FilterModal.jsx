@@ -9,20 +9,23 @@ const FilterModal = ({
   onClose,
   allCategories,
   selectedCategoryIds,
-  onToggleCategory,
+  onCategoryFilterChange,
   startDate,
   endDate,
   onStartDateChange,
   onEndDateChange,
-  onApplyFilters, // New prop to apply filters and close modal
+  onApplyFilters,
 }) => {
+  const categoryOptions = (allCategories || []).map(c => ({ value: c.id, label: c.name }));
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Filtros de Transações">
       <div className="space-y-4">
         <CategoryFilter
-          allCategories={allCategories}
-          selectedIds={selectedCategoryIds}
-          onToggleCategory={onToggleCategory}
+          options={categoryOptions}
+          selectedItems={selectedCategoryIds}
+          onChange={onCategoryFilterChange}
+          filterName="Categorias"
         />
         <DateRangePicker
           startDate={startDate}

@@ -11,7 +11,7 @@ export default function GastosPage() {
     loading, 
     categories,
     selectedCategoryIds,
-    toggleCategoryFilter 
+    onCategoryFilterChange 
   } = useTransactions();
 
   const { startDate, endDate, updateDates } = useUtils();
@@ -52,7 +52,7 @@ export default function GastosPage() {
       <GastosFilters
         categories={categories}
         selectedCategoryIds={selectedCategoryIds}
-        toggleCategoryFilter={toggleCategoryFilter}
+        onCategoryFilterChange={onCategoryFilterChange}
         startDate={startDate}
         endDate={endDate}
         updateDates={updateDates}

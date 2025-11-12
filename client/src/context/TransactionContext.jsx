@@ -117,14 +117,6 @@ export const TransactionProvider = ({ children }) => {
     updateDates(start, end);
   }
 
-  const toggleCategoryFilter = (categoryId) => {
-    setSelectedCategoryIds(prevIds => 
-      prevIds.includes(categoryId) 
-        ? prevIds.filter(id => id !== categoryId)
-        : [...prevIds, categoryId]
-    );
-  };
-
   const handleProcessStatement = async (file) => {
     console.log("Starting handleProcessStatement for file:", file.name);
     try {
@@ -243,7 +235,7 @@ export const TransactionProvider = ({ children }) => {
     endDate,
     setDateRange,
     selectedCategoryIds,
-    toggleCategoryFilter,
+    onCategoryFilterChange: setSelectedCategoryIds,
     processStatement: handleProcessStatement,
     addTransaction: handleAddTransaction,
     deleteTransaction: handleDeleteTransaction,

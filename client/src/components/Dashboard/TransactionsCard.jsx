@@ -24,7 +24,7 @@ export default function TransactionsCard({
   addCategory,
   removeCategory,
   selectedCategoryIds,
-  toggleCategoryFilter,
+  onCategoryFilterChange,
   startDate,
   endDate,
   updateDates
@@ -33,6 +33,11 @@ export default function TransactionsCard({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+
+  const categoryOptions = useMemo(() => 
+    (categories || []).map(c => ({ value: c.id, label: c.name })),
+    [categories]
+  );
 
   const handleCategoryChange = async (id, newCategoryId) => {
     await updateTransactionCategory(id, newCategoryId);
@@ -66,13 +71,10 @@ export default function TransactionsCard({
                   <div className="hidden md:flex flex-wrap items-center gap-4">
 
                     <CategoryFilter
-
-                      allCategories={categories}
-
-                      selectedIds={selectedCategoryIds}
-
-                      onToggleCategory={toggleCategoryFilter}
-
+                      options={categoryOptions}
+                      selectedItems={selectedCategoryIds}
+                      onChange={onCategoryFilterChange}
+                      filterName="Categorias"
                     />
 
                     <DateRangePicker
@@ -173,7 +175,7 @@ export default function TransactionsCard({
 
                       <CategoryManager
 
-                        categories={categories.map(c => ({ value: c.id, label: c.name }))}
+                        categories={categoryOptions}
 
                         onSelectCategory={(category) => handleCategoryChange(t.id, category)}
 
@@ -295,7 +297,7 @@ export default function TransactionsCard({
 
               selectedCategoryIds={selectedCategoryIds}
 
-              onToggleCategory={toggleCategoryFilter}
+              onCategoryFilterChange={onCategoryFilterChange}
 
               startDate={startDate}
 

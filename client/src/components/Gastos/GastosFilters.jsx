@@ -5,20 +5,23 @@ import DateRangePicker from '../shared/DateRangePicker';
 export default function GastosFilters({
   categories,
   selectedCategoryIds,
-  toggleCategoryFilter,
+  onCategoryFilterChange,
   startDate,
   endDate,
   updateDates,
   totalSpent
 }) {
+  const categoryOptions = (categories || []).map(c => ({ value: c.id, label: c.name }));
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       <Card>
         <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Filtrar por Categoria</h3>
         <CategoryFilter
-          allCategories={categories}
-          selectedIds={selectedCategoryIds}
-          onToggleCategory={toggleCategoryFilter}
+          options={categoryOptions}
+          selectedItems={selectedCategoryIds}
+          onChange={onCategoryFilterChange}
+          filterName="Categorias"
         />
       </Card>
       <Card>

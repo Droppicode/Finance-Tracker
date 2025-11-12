@@ -23,7 +23,7 @@ export default function DashboardPage() {
     removeCategory,
     loading,
     selectedCategoryIds,
-    toggleCategoryFilter,
+    onCategoryFilterChange,
   } = useTransactions();
 
   const { startDate, endDate, updateDates } = useUtils();
@@ -68,7 +68,7 @@ export default function DashboardPage() {
           removeCategory={removeCategory}
           loading={loading}
           selectedCategoryIds={selectedCategoryIds}
-          toggleCategoryFilter={toggleCategoryFilter}
+          onCategoryFilterChange={onCategoryFilterChange}
           startDate={startDate}
           endDate={endDate}
           updateDates={updateDates}
