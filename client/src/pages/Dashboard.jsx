@@ -50,6 +50,7 @@ export default function DashboardPage() {
         {/* Add Transaction Form Card for large screens */}
         <div className="lg:col-span-2 hidden lg:block h-full">
           <Card className="flex flex-col h-full">
+            <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Adicionar Investimento</h2>
             <AddTransactionForm className="flex-grow" />
           </Card>
         </div>

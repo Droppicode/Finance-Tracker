@@ -29,7 +29,7 @@ const TransactionListItem = ({
   };
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-700 shadow-lg rounded-lg p-4 mb-3">
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-3">
       <div className="flex justify-between items-center" onClick={() => setIsExpanded(!isExpanded)}>
         <div className="flex flex-col">
           <span className="text-sm text-gray-500 dark:text-gray-300">{transaction.date}</span>

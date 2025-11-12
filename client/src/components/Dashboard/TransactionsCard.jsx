@@ -31,7 +31,7 @@ export default function TransactionsCard({
 }) {
   const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const itemsPerPage = 10;
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   const categoryOptions = useMemo(() => 

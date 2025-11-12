@@ -48,7 +48,7 @@ export const TransactionProvider = ({ children }) => {
         const transactionsWithCategories = transactionsData.map(t => ({
           ...t,
           category: categoriesMap.get(t.category_id) || null,
-        }));
+        })).sort((a, b) => new Date(b.date) - new Date(a.date));
 
         setTransactions(transactionsWithCategories);
         setCategories(categoriesData);
@@ -106,10 +106,10 @@ export const TransactionProvider = ({ children }) => {
     });
 
     if (selectedCategoryIds.length === 0) {
-      return dateFiltered;
+      return dateFiltered.sort((a, b) => new Date(b.date) - new Date(a.date));
     }
 
-    return dateFiltered.filter(t => t.category && selectedCategoryIds.includes(t.category.id));
+    return dateFiltered.filter(t => t.category && selectedCategoryIds.includes(t.category.id)).sort((a, b) => new Date(b.date) - new Date(a.date));
 
   }, [transactions, startDate, endDate, selectedCategoryIds]);
 
@@ -123,13 +123,65 @@ export const TransactionProvider = ({ children }) => {
       showNotification('Processando extrato...', 'info');
       const extractedText = await extractTextFromPDF(file); // Extract text from PDF
       console.log("PDF text extracted. Sending to API...");
-      const newTransactions = await processStatement(extractedText); // Pass extracted text to API
-      console.log("API call for processStatement successful. New transactions received:", newTransactions.length);
-      if (newTransactions) {
-        setTransactions(prev => [...prev, ...newTransactions].sort((a, b) => new Date(b.date) - new Date(a.date)));
+      const newTransactionsFromAI = await processStatement(extractedText); // Pass extracted text to API
+      console.log("API call for processStatement successful. New transactions received:", newTransactionsFromAI.length);
+
+      if (!newTransactionsFromAI || newTransactionsFromAI.length === 0) {
+        showNotification('Nenhuma transação encontrada no extrato.', 'info');
+        return;
       }
-      const categoriesRes = await getCategories();
-      setCategories(categoriesRes.data);
+
+      // 1. Get current categories and create a map for quick lookup
+      let allCategories = await getCategories();
+      const categoryNameToIdMap = new Map(allCategories.map(c => [c.name, c.id]));
+
+      // 2. Find and create any new categories suggested by the AI
+      const newCategoryNames = [...new Set(newTransactionsFromAI.map(t => t.category).filter(Boolean))];
+      const categoriesToCreate = newCategoryNames.filter(name => !categoryNameToIdMap.has(name));
+
+      if (categoriesToCreate.length > 0) {
+        for (const name of categoriesToCreate) {
+          await createCategory({ name });
+        }
+        // Refresh categories list
+        allCategories = await getCategories();
+      }
+      
+      // Update categories in state
+      setCategories(allCategories);
+      
+      // Create a new map with potentially new categories
+      const updatedCategoryNameToObjMap = new Map(allCategories.map(c => [c.name, c]));
+
+      // 3. Prepare transaction data for creation
+      const transactionsToCreate = newTransactionsFromAI.map(t => {
+        const category = updatedCategoryNameToObjMap.get(t.category);
+        return {
+          description: t.description,
+          amount: t.amount,
+          date: t.date,
+          type: t.type,
+          category_id: category ? category.id : null,
+        };
+      });
+
+      // 4. Create transactions in the backend
+      const createdTransactions = [];
+      for (const t of transactionsToCreate) {
+        const newTrans = await createTransaction(t);
+        createdTransactions.push(newTrans);
+      }
+
+      // 5. Add the full category object to the created transactions
+      const categoryIdToObjMap = new Map(allCategories.map(c => [c.id, c]));
+      const newTransactionsWithCategory = createdTransactions.map(t => ({
+        ...t,
+        category: categoryIdToObjMap.get(t.category_id) || null
+      }));
+
+      // 6. Update the transactions state
+      setTransactions(prev => [...prev, ...newTransactionsWithCategory].sort((a, b) => new Date(b.date) - new Date(a.date)));
+
       showNotification('Extrato processado e transações adicionadas!', 'success');
     } catch (err) {
       console.error("Error processing statement:", err);
