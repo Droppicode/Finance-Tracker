@@ -1,12 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import Button from '../shared/Button';
-import { searchSymbol } from '../../api/brapi';
+import { useRef, useEffect } from 'react';
 
-const InvestmentSearchPopover = ({ searchTerm, onSearchSubmit, onSelectInvestment, onClose, searchInputRef }) => {
-  const [searchResults, setSearchResults] = useState([]);
-  const [lastSearchTerm, setLastSearchTerm] = useState(null);
-  const [loadingSearch, setLoadingSearch] = useState(false);
-  const [searchError, setSearchError] = useState(null);
+const InvestmentSearchPopover = ({ searchTerm, searchResults, loadingSearch, searchError, onSelectInvestment, onClose, searchInputRef }) => {
   const wrapperRef = useRef(null);
 
   useEffect(() => {
@@ -22,36 +16,6 @@ const InvestmentSearchPopover = ({ searchTerm, onSearchSubmit, onSelectInvestmen
     };
   }, [wrapperRef, searchInputRef, onClose]);
 
-  const handleSearch = useCallback(async () => {
-    if (!searchTerm.trim()) {
-      setLastSearchTerm(null);
-      setSearchResults([]);
-      setSearchError(null);
-      return;
-    }
-    setLoadingSearch(true);
-    setSearchError(null);
-    try {
-      const results = await searchSymbol(searchTerm);
-      setLastSearchTerm(searchTerm);
-      setSearchResults(results);
-    } catch (err) {
-      console.error("Erro ao buscar investimentos:", err);
-      setSearchError("Erro ao buscar investimentos. Tente novamente.");
-      setLastSearchTerm(null);
-      setSearchResults([]);
-    } finally {
-      setLoadingSearch(false);
-    }
-  }, [searchTerm]);
-
-  // Expose handleSearch to parent via onSearchSubmit prop
-  useEffect(() => {
-    if (onSearchSubmit) {
-      onSearchSubmit.current = handleSearch;
-    }
-  }, [onSearchSubmit, handleSearch]);
-
   const handleSelect = (investment) => {
     onSelectInvestment(investment);
     onClose();
@@ -59,9 +23,6 @@ const InvestmentSearchPopover = ({ searchTerm, onSearchSubmit, onSelectInvestmen
 
   return (
     <div className="absolute z-10 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4" ref={wrapperRef}>
-      {searchTerm.trim() !== '' && searchTerm != lastSearchTerm && !loadingSearch && !searchError && (
-        <p className="text-gray-500 dark:text-gray-400 mb-2">Pressione Enter para pesquisar.</p>
-      )}
       {loadingSearch && <p className="text-blue-500 dark:text-blue-400">Buscando...</p>}
       {searchError && <p className="text-red-500 dark:text-red-400">{searchError}</p>}
 

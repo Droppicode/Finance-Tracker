@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'; // Importe useCallback
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Card from '../shared/Card';
 import Button from '../shared/Button';
@@ -7,7 +7,8 @@ import Input from '../shared/Input';
 import InvestmentSearchPopover from './InvestmentSearchPopover';
 import OtherInvestmentForm from './OtherInvestmentForm';
 import { getQuote } from '../../api/brapi';
-import { Plus, Info } from 'lucide-react';
+import { searchSymbol } from '../../api/brapi'; // Import searchSymbol
+import { Plus, Info, Search } from 'lucide-react';
 
 export default function AddInvestmentForm({ addInvestment, loading, investmentOptions, formType }) {
   const [assetName, setAssetName] = useState("");
@@ -17,23 +18,55 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
   const [assetType, setAssetType] = useState("");
   const [isEditingPrice, setIsEditingPrice] = useState(false);
   const [error, setError] = useState(null);
-  const [showSearchPopover, setShowSearchPopover] = useState(false); // Renamed from isSearchModalOpen
+  const [showSearchPopover, setShowSearchPopover] = useState(false);
   const [selectedInvestment, setSelectedInvestment] = useState(null);
-  const searchPopoverRef = useRef(null); // Ref to expose handleSearch from popover
-  const searchInputRef = useRef(null); // Ref for the search input
+  const searchInputRef = useRef(null);
+
+  // New state for search results and loading
+  const [searchResults, setSearchResults] = useState([]);
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const [searchError, setSearchError] = useState(null);
+  const [lastSearchTerm, setLastSearchTerm] = useState(null); // To prevent re-searching same term
+
   const navigate = useNavigate();
   const location = useLocation();
 
-  const processedLocationKey = useRef(null); 
+  const processedLocationKey = useRef(null);
 
-  const handleSelectInvestment = useCallback(async (investment) => {    
+  const handleSearch = useCallback(async (term) => {
+    if (!term.trim()) {
+      setSearchResults([]);
+      setSearchError(null);
+      setLastSearchTerm(null);
+      return;
+    }
+    if (term === lastSearchTerm) { // Prevent searching the same term repeatedly
+      return;
+    }
+    setLoadingSearch(true);
+    setSearchError(null);
+    try {
+      const results = await searchSymbol(term);
+      setSearchResults(results);
+      setLastSearchTerm(term);
+    } catch (err) {
+      console.error("Erro ao buscar investimentos:", err);
+      setSearchError("Erro ao buscar investimentos. Tente novamente.");
+      setSearchResults([]);
+    } finally {
+      setLoadingSearch(false);
+    }
+  }, [lastSearchTerm]);
+
+  const handleSelectInvestment = useCallback(async (investment) => {
     setAssetName(`${investment.stock} - ${investment.name}`);
     setAssetType(investment.type);
     setSelectedInvestment(investment);
-    setShowSearchPopover(false); // Use setShowSearchPopover
+    setShowSearchPopover(false);
     setIsEditingPrice(false);
     setError(null);
-    // Removed setSearchTerm('') as assetName now handles both
+    setSearchResults([]); // Clear search results after selection
+    setLastSearchTerm(null); // Reset last search term
 
     if (investment.regularMarketPrice !== null && investment.regularMarketPrice !== undefined) {
       setAssetPrice(investment.regularMarketPrice);
@@ -53,26 +86,26 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
   }, [setAssetName, setAssetType, setSelectedInvestment, setShowSearchPopover, setIsEditingPrice, setError, setAssetPrice, setIsPriceLoading]);
 
   useEffect(() => {
-    const { state, key, pathname } = location; 
+    const { state, key, pathname } = location;
 
     if (state?.fromDetailsPage && state?.asset) {
-      
-      if (processedLocationKey.current === key) return; 
-  
+
+      if (processedLocationKey.current === key) return;
+
       processedLocationKey.current = key;
 
       const processNavigation = async () => {
         await handleSelectInvestment(state.asset);
-        
+
         navigate(pathname, { replace: true, state: {} });
       };
 
       processNavigation();
     }
-  
+
   }, [
-    handleSelectInvestment, 
-    navigate, 
+    handleSelectInvestment,
+    navigate,
     location
   ]);
 
@@ -111,7 +144,9 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
     setAssetPrice(null);
     setAssetType('');
     setSelectedInvestment(null);
-    // Removed setSearchTerm('') as assetName now handles both
+    setSearchResults([]); // Clear search results after adding
+    setLastSearchTerm(null); // Reset last search term
+    setShowSearchPopover(false); // Close the search popover
   };
 
   return (
@@ -120,30 +155,53 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
         <form onSubmit={handleAddInvestment} className="space-y-4">
           <div className="relative">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ativo / Onde</label>
-            <Input
-              ref={searchInputRef} // Attach ref to the Input
-              placeholder="Ex: Tesouro Selic 2029, MXRF11"
-              value={assetName} // Use assetName here
-              onChange={(e) => {
-                setAssetName(e.target.value);
-                setShowSearchPopover(true); // Use setShowSearchPopover
-                setError(null);
-              }}
-              onFocus={() => setShowSearchPopover(true)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && searchPopoverRef.current) {
+            <div className="flex items-center gap-2">
+              <Input
+                ref={searchInputRef}
+                placeholder="Ex: MXRF11, AAPL34, PETR4, ..."
+                value={assetName}
+                onChange={(e) => {
+                  setAssetName(e.target.value);
+                  setShowSearchPopover(true);
+                  setError(null);
+                  // Clear search results if input changes after a search
+                  if (lastSearchTerm && e.target.value !== lastSearchTerm) {
+                    setSearchResults([]);
+                    setLastSearchTerm(null);
+                  }
+                }}
+                onFocus={() => setShowSearchPopover(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.target === searchInputRef.current) {
+                    e.preventDefault();
+                    handleSearch(assetName); // Trigger search on Enter
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                onClick={(e) => {
                   e.preventDefault();
-                  searchPopoverRef.current(); // Trigger search in popover
-                }
-              }}
-            />
-            {showSearchPopover && ( // Only render popover when open
+                  setShowSearchPopover(true);
+                  handleSearch(assetName); // Trigger search on button click
+                }}
+                className="block sm:hidden"
+                variant="secondary"
+                size="icon"
+                title="Pesquisar"
+              >
+                <Search className="w-6 h-6" />
+              </Button>
+            </div>
+            {showSearchPopover && (
               <InvestmentSearchPopover
-                searchTerm={assetName} // Pass assetName as searchTerm
-                onSearchSubmit={searchPopoverRef} // Pass the ref
-                onClose={() => setShowSearchPopover(false)} // Use setShowSearchPopover
+                searchTerm={assetName}
+                searchResults={searchResults} // Pass search results
+                loadingSearch={loadingSearch} // Pass loading state
+                searchError={searchError} // Pass error state
                 onSelectInvestment={handleSelectInvestment}
-                searchInputRef={searchInputRef} // Pass the search input ref
+                onClose={() => setShowSearchPopover(false)}
+                searchInputRef={searchInputRef}
               />
             )}
           </div>
@@ -183,12 +241,12 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
                 </div>
                 {selectedInvestment && (
                   <Button
-                    variant="ghost"
+                    variant="secondary"
                     size="icon"
                     onClick={() => navigate(`/investimentos/${selectedInvestment.stock}`, { state: { fromAddInvestmentForm: true, asset: selectedInvestment } })}
                     title="Ver detalhes do ativo"
                   >
-                    <Info className="w-5 h-5" />
+                    <Info className="w-6 h-6" />
                   </Button>
                 )}
               </div>
@@ -202,6 +260,12 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
               placeholder="100"
               value={assetQuantity}
               onChange={(e) => { setAssetQuantity(e.target.value); setError(null); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.target.closest('form').requestSubmit();
+                }
+              }}
               disabled={assetPrice === null}
             />
           </div>
