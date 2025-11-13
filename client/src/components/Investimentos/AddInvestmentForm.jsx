@@ -183,7 +183,7 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
                   setShowSearchPopover(true);
                   handleSearch(assetName); // Trigger search on button click
                 }}
-                className="block sm:hidden"
+                className="block lg:hidden"
                 variant="secondary"
                 size="icon"
                 title="Pesquisar"

@@ -96,7 +96,7 @@ export default function InvestmentDetailsCard({ assetQuote, onClose, isEmbedded 
                 <p className="text-sm text-gray-500 dark:text-gray-400">{assetQuote.longName || assetQuote.shortName}</p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+            <Button variant="ghost" size="icon" onClick={onClose} className="hidden lg:block text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
               <X className="w-6 h-6" />
             </Button>
           </div>

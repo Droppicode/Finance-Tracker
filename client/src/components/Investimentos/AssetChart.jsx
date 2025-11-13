@@ -115,10 +115,12 @@ const AssetChart = ({ symbol }) => {
                 <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
               </linearGradient>
             </defs>
-            <XAxis dataKey="date" />
+            <XAxis dataKey="date" tick={{ fontSize: 10 }} />
             <YAxis 
               domain={[dataMin => dataMin * 0.99, dataMax => dataMax * 1.01]}
               tickFormatter={(value) => value.toFixed(2)} 
+              tick={{ fontSize: 10 }}
+              width={40}
             />
             <CartesianGrid strokeDasharray="3 3" />
             <Tooltip content={<CustomTooltip />} />
