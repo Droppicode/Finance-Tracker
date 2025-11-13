@@ -46,9 +46,23 @@ const PrivateRoute = ({ children }) => {
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
+import { Fullscreen } from '@boengli/capacitor-fullscreen';
+
 const AppRoutes = () => {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const { isAuthenticated } = useContext(AuthContext);
+
+  useEffect(() => {
+    const activateImmersiveMode = async () => {
+      try {
+        await Fullscreen.activateImmersiveMode();
+      } catch (error) {
+        console.error('Failed to activate immersive mode:', error);
+      }
+    };
+
+    activateImmersiveMode();
+  }, []);
 
   useEffect(() => {
     const localTheme = localStorage.getItem('theme');

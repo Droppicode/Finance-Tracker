@@ -21,7 +21,7 @@ const FilterModal = ({
   onGroupByAssetChange,
   groupByAssetText = "Agrupar por Ativo"
 }) => {
-  const categoryOptions = (allCategories || []).map(c => ({ value: c.id, label: c.name }));
+  const categoryOptions = (allCategories || []).map(c => ({ value: c.value || c.id, label: c.label || c.name }));
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>

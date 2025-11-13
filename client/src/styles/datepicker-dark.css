@@ -1,0 +1,67 @@
+/* src/styles/datepicker-dark.css */
+
+.dark .react-datepicker {
+  background-color: #1f2937; /* gray-800 */
+  border-color: #4b5563; /* gray-600 */
+  color: #d1d5db; /* gray-300 */
+}
+
+.dark .react-datepicker__header {
+  background-color: #1f2937; /* gray-800 */
+  border-bottom-color: #4b5563; /* gray-600 */
+}
+
+.dark .react-datepicker__current-month,
+.dark .react-datepicker-time__header,
+.dark .react-datepicker-year-header {
+  color: #d1d5db; /* gray-300 */
+}
+
+.dark .react-datepicker__day-name,
+.dark .react-datepicker__day,
+.dark .react-datepicker__time-name {
+  color: #d1d5db; /* gray-300 */
+}
+
+.dark .react-datepicker__day:hover,
+.dark .react-datepicker__month-text:hover,
+.dark .react-datepicker__quarter-text:hover,
+.dark .react-datepicker__year-text:hover {
+  background-color: #374151; /* gray-700 */
+}
+
+.dark .react-datepicker__day--selected,
+.dark .react-datepicker__day--in-selecting-range,
+.dark .react-datepicker__day--in-range,
+.dark .react-datepicker__month-text--selected,
+.dark .react-datepicker__month-text--in-selecting-range,
+.dark .react-datepicker__month-text--in-range,
+.dark .react-datepicker__quarter-text--selected,
+.dark .react-datepicker__quarter-text--in-selecting-range,
+.dark .react-datepicker__quarter-text--in-range,
+.dark .react-datepicker__year-text--selected,
+.dark .react-datepicker__year-text--in-selecting-range,
+.dark .react-datepicker__year-text--in-range {
+  background-color: #4f46e5; /* indigo-600 */
+  color: #fff;
+}
+
+.dark .react-datepicker__day--keyboard-selected,
+.dark .react-datepicker__month-text--keyboard-selected,
+.dark .react-datepicker__quarter-text--keyboard-selected,
+.dark .react-datepicker__year-text--keyboard-selected {
+  background-color: #4338ca; /* indigo-700 */
+  color: #fff;
+}
+
+.dark .react-datepicker__day--disabled {
+  color: #6b7280; /* gray-500 */
+}
+
+.dark .react-datepicker__navigation-icon::before {
+  border-color: #d1d5db; /* gray-300 */
+}
+
+.dark .react-datepicker__close-icon::after {
+  background-color: #4f46e5; /* indigo-600 */
+}

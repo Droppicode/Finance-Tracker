@@ -128,14 +128,11 @@ export default function SavedInvestmentsCard({
                       className="flex justify-between items-center p-3 rounded-lg transition-colors duration-200 cursor-pointer bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50"
                       onClick={() => handleInvestmentClick(inv.id)}
                     >
-                      <div className="flex-1 grid grid-cols-3 items-center gap-2">
+                      <div className="flex-1 flex items-center justify-between">
                         <span className="font-bold text-gray-800 dark:text-gray-100 truncate">{inv.symbol}</span>
-                        <p className="font-medium text-gray-800 dark:text-gray-100 text-center">
+                        <p className="font-medium text-gray-800 dark:text-gray-100">
                           {(inv.quantity * inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </p>
-                        {inv.type && (
-                          <span className="text-xs text-center px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 truncate">{labelFromType(inv.type)}</span>
-                        )}
                       </div>
                       <ChevronDown className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ml-2 ${isExpanded ? 'rotate-180' : ''}`} />
                     </div>
@@ -147,6 +144,11 @@ export default function SavedInvestmentsCard({
                             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                               {parseFloat(inv.quantity).toFixed(2)} x {parseFloat(inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                             </p>
+                            {inv.type && (
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                Tipo: {labelFromType(inv.type)}
+                              </p>
+                            )}
                             {groupByAsset && inv.originalIds && (
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 {inv.originalIds.length} {inv.originalIds.length > 1 ? 'compras' : 'compra'}

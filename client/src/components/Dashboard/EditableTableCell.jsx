@@ -54,7 +54,7 @@ export default function EditableTableCell({ value, onSave, cellType = 'text', op
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           autoFocus
-          className="w-full px-2 py-1 border rounded-md bg-gray-100 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-2 py-1 border border-gray-300 rounded-md bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm sm:text-base focus:outline-none focus:ring-0"
         >
           {options.map(option => (
             <option key={option.value} value={option.value}>{option.label}</option>
@@ -71,7 +71,7 @@ export default function EditableTableCell({ value, onSave, cellType = 'text', op
         onKeyDown={handleKeyDown}
         onBlur={handleBlur}
         autoFocus
-        className="w-full px-2 py-1 border rounded-md bg-gray-100 dark:bg-gray-700 focus:outline-none"
+        className="w-full px-2 py-1 border border-gray-300 rounded-md bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm sm:text-base focus:outline-none focus:ring-0"
       />
     );
   }
@@ -95,7 +95,7 @@ export default function EditableTableCell({ value, onSave, cellType = 'text', op
           {transactionType === 'credit' ? '+' : '-'}
         </span>
       )}
-      <span className="flex-grow dark:text-white">
+      <span className="flex-grow dark:text-white text-sm sm:text-base">
         {cellType === 'number' ? (Number(value) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : value}
       </span>
     </div>
