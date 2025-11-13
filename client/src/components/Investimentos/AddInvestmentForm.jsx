@@ -10,7 +10,7 @@ import { getQuote } from '../../api/brapi';
 import { searchSymbol } from '../../api/brapi'; // Import searchSymbol
 import { Plus, Info, Search } from 'lucide-react';
 
-export default function AddInvestmentForm({ addInvestment, loading, investmentOptions, formType }) {
+export default function AddInvestmentForm({ addInvestment, loading, investmentOptions, formType, onInvestmentSelected }) {
   const [assetName, setAssetName] = useState("");
   const [assetQuantity, setAssetQuantity] = useState("");
   const [assetPrice, setAssetPrice] = useState(null);
@@ -58,33 +58,31 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
     }
   }, [lastSearchTerm]);
 
-  const handleSelectInvestment = useCallback(async (investment) => {
-    setAssetName(`${investment.stock} - ${investment.name}`);
-    setAssetType(investment.type);
-    setSelectedInvestment(investment);
-    setShowSearchPopover(false);
-    setIsEditingPrice(false);
-    setError(null);
-    setSearchResults([]); // Clear search results after selection
-    setLastSearchTerm(null); // Reset last search term
-
-    if (investment.regularMarketPrice !== null && investment.regularMarketPrice !== undefined) {
-      setAssetPrice(investment.regularMarketPrice);
-    } else {
-      setIsPriceLoading(true);
+    const handleSelectInvestment = useCallback(async (investment) => {
+      setAssetName(`${investment.stock} - ${investment.name}`);
+      setAssetType(investment.type);
+      setSelectedInvestment(investment);
+      setShowSearchPopover(false);
+      setIsEditingPrice(false);
+      setError(null);
+      setSearchResults([]); // Clear search results after selection
+      setLastSearchTerm(null); // Reset last search term
+  
+      setIsPriceLoading(true); // Always fetch the full quote to ensure complete data
       try {
         const quote = await getQuote(investment.stock);
         if (quote) {
           setAssetPrice(quote.regularMarketPrice);
+          if (onInvestmentSelected) {
+            onInvestmentSelected(quote); // Pass the full quote to the parent
+          }
         }
       } catch (error) {
         console.error("Erro ao buscar cotação do ativo:", error);
       } finally {
         setIsPriceLoading(false);
       }
-    }
-  }, [setAssetName, setAssetType, setSelectedInvestment, setShowSearchPopover, setIsEditingPrice, setError, setAssetPrice, setIsPriceLoading]);
-
+    }, [onInvestmentSelected]);
   useEffect(() => {
     const { state, key, pathname } = location;
 

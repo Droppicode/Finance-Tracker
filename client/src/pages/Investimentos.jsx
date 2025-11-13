@@ -8,8 +8,10 @@ import OtherInvestmentCard from '../components/Investimentos/OtherInvestmentCard
 import PortfolioChartCard from '../components/Investimentos/PortfolioChartCard';
 import AddInvestmentForm from '../components/Investimentos/AddInvestmentForm';
 import SavedInvestmentsCard from '../components/Investimentos/SavedInvestmentsCard';
+import InvestmentDetailsCard from '../components/Investimentos/InvestmentDetailsCard'; // Import InvestmentDetailsCard
 import { useInvestments } from '../context/InvestmentContext';
 import { useUtils } from '../context/UtilsContext';
+import { X } from 'lucide-react'; // Import X icon
 
 const investmentOptions = [
   { value: 'stock', label: 'Ações' },
@@ -63,34 +65,101 @@ export default function InvestimentosPage() {
     return Object.entries(map).map(([type, value]) => ({ name: labelFromType(type), value }));
   }, [investments]);
 
+  const [selectedAsset, setSelectedAsset] = useState(null); // New state for selected asset
+
+  const handleInvestmentSelection = (asset) => {
+    setSelectedAsset(asset);
+  };
+
+  const clearSelectedInvestment = () => {
+    setSelectedAsset(null);
+  };
+
   return (
     <div>
       <Header title="Carteira de Investimentos" />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        {!isMobileView && ( // Conditionally render desktop form
-          <div className="hidden lg:block lg:col-span-1">
-            <Card className="h-full">
-              <div className="flex flex-wrap items-baseline gap-2 mb-4">
-                <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Adicionar Investimento</h2>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setFormType('market')} className={`px-3 py-1 text-sm rounded-md ${formType === 'market' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 dark:text-white'}`}>Mercado</button>
-                  <button onClick={() => setFormType('other')} className={`px-3 py-1 text-sm rounded-md ${formType === 'other' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 dark:text-white'}`}>Outros</button>
+      {/* Desktop Layout */}
+      {!isMobileView ? (
+        <>
+          {/* First Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            {/* Coluna do Formulário */}
+            <div className="lg:col-span-1">
+              <Card className="h-full">
+                <div className="flex flex-wrap items-baseline gap-2 mb-4">
+                  <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Adicionar Investimento</h2>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setFormType('market')} className={`px-3 py-1 text-sm rounded-md ${formType === 'market' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 dark:text-white'}`}>Mercado</button>
+                    <button onClick={() => setFormType('other')} className={`px-3 py-1 text-sm rounded-md ${formType === 'other' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 dark:text-white'}`}>Outros</button>
+                  </div>
                 </div>
+                <AddInvestmentForm
+                  addInvestment={addInvestment}
+                  loading={loading}
+                  investmentOptions={investmentOptions}
+                  formType={formType}
+                  onInvestmentSelected={handleInvestmentSelection} // Pass handler
+                />
+              </Card>
+            </div>
+
+            {/* Coluna de Detalhes do Ativo ou Gráfico de Alocação */}
+            {selectedAsset ? (
+              <div className="lg:col-span-2">
+                <InvestmentDetailsCard assetQuote={selectedAsset} onClose={clearSelectedInvestment} isEmbedded={true} />
               </div>
-              <AddInvestmentForm addInvestment={addInvestment} loading={loading} investmentOptions={investmentOptions} formType={formType} />
-            </Card>
+            ) : (
+              <div className="lg:col-span-2">
+                <PortfolioChartCard chartData={chartData} totalInvested={totalInvested} />
+              </div>
+            )}
           </div>
-        )}
 
-        <div className="lg:col-span-2">
-          <PortfolioChartCard chartData={chartData} totalInvested={totalInvested} />
-        </div>
-      </div>
+          {/* Second Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+            {selectedAsset ? (
+              <>
+                <div className="lg:col-span-2 h-[38rem] lg:relative">
+                  <SavedInvestmentsCard
+                    investments={investments}
+                    removeInvestment={removeInvestment}
+                    loading={loading}
+                    investmentOptions={investmentOptions}
+                    startDate={startDate}
+                    endDate={endDate}
+                    updateDates={updateDates}
+                    labelFromType={labelFromType}
+                  />
+                </div>
+                <div className="lg:col-span-1">
+                  <PortfolioChartCard chartData={chartData} totalInvested={totalInvested} />
+                </div>
+              </>
+            ) : (
+              <div className="lg:col-span-3 h-[38rem] lg:relative">
+                <SavedInvestmentsCard
+                  investments={investments}
+                  removeInvestment={removeInvestment}
+                  loading={loading}
+                  investmentOptions={investmentOptions}
+                  startDate={startDate}
+                  endDate={endDate}
+                  updateDates={updateDates}
+                  labelFromType={labelFromType}
+                />
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Mobile Layout */}
+          <div className="grid grid-cols-1 gap-6 mb-6">
+            <PortfolioChartCard chartData={chartData} totalInvested={totalInvested} />
+          </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-        <div className={"lg:col-span-3"}>
-          <div className={`${isMobileView ? 'max-h-[38rem] overflow-y-auto' : 'h-[38rem]'} lg:relative lg:col-span-2`}>
+          <div className="grid grid-cols-1 gap-6 mt-6">
             <SavedInvestmentsCard
               investments={investments}
               removeInvestment={removeInvestment}
@@ -102,8 +171,8 @@ export default function InvestimentosPage() {
               labelFromType={labelFromType}
             />
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       <div className="mt-6">
         <Card>

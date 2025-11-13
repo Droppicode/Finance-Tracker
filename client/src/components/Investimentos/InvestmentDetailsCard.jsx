@@ -1,8 +1,10 @@
 import Card from '../shared/Card';
 import Tabs from '../shared/Tabs';
 import AssetChart from './AssetChart';
+import Button from '../shared/Button';
+import { X } from 'lucide-react';
 
-export default function InvestmentDetailsCard({ assetQuote }) {
+export default function InvestmentDetailsCard({ assetQuote, onClose, isEmbedded = false }) {
   const overviewTab = (
     <>
       <div className="mb-4">
@@ -81,7 +83,7 @@ export default function InvestmentDetailsCard({ assetQuote }) {
   ];
 
   return (
-    <div className="h-auto lg:relative lg:col-span-2">
+    <div className={isEmbedded ? "h-[34rem] lg:relative" : "h-auto"}>
       <Card className="h-full lg:absolute lg:inset-0 flex flex-col">
         <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="flex items-center justify-between mb-4">
@@ -94,6 +96,9 @@ export default function InvestmentDetailsCard({ assetQuote }) {
                 <p className="text-sm text-gray-500 dark:text-gray-400">{assetQuote.longName || assetQuote.shortName}</p>
               </div>
             </div>
+            <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+              <X className="w-6 h-6" />
+            </Button>
           </div>
           <Tabs tabs={TABS} />
         </div>
