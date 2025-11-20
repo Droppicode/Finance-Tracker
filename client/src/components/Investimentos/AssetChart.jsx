@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   AreaChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area
 } from 'recharts';
 import Button from '../shared/Button';
+import { getQuote } from '../../api/brapi';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -19,55 +20,123 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const AssetChart = ({ symbol }) => {
-  const [data, setData] = useState([]);
+  const [chartData, setChartData] = useState([]);
+  const [longTermData, setLongTermData] = useState({ symbol: null, data: [] });
+  const [shortTermData, setShortTermData] = useState({ symbol: null, data: [] });
   const [loading, setLoading] = useState(false);
-  const [range, setRange] = useState('3mo'); // Default range
+  const [range, setRange] = useState('1mo'); // Default range
 
   useEffect(() => {
-    const fetchChartData = async () => {
+    const fetchAllData = async () => {
       if (!symbol) return;
+
+      // Clear old data when symbol changes
+      if (symbol !== longTermData.symbol) {
+        setLongTermData({ symbol: null, data: [] });
+        setShortTermData({ symbol: null, data: [] });
+        setChartData([]);
+      }
+
       setLoading(true);
       try {
-        // Mocked chart data generation
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-        const generateMockData = (numPoints) => {
-          let lastPrice = 100 + Math.random() * 50;
-          const mockData = [];
-          for (let i = 0; i < numPoints; i++) {
-            const date = new Date();
-            date.setDate(date.getDate() - (numPoints - i));
-            lastPrice += (Math.random() - 0.5) * 5;
-            mockData.push({
-              date: date.toLocaleDateString('pt-BR'),
-              price: Math.max(10, lastPrice), // Ensure price doesn't go below 10
-            });
-          }
-          return mockData;
-        };
-        
-        let numPoints;
-        switch(range) {
-          case '1d': numPoints = 8; break;
-          case '5d': numPoints = 5; break;
-          case '1mo': numPoints = 30; break;
-          case '3mo': numPoints = 90; break;
-          case '6mo': numPoints = 180; break;
-          case '1y': numPoints = 365; break;
-          case '5y': numPoints = 365 * 5; break;
-          default: numPoints = 365 * 10; break; // max
-        }
+        // Re-fetching all data, including long-term ('max') and short-term ('5d')
+        const [longTermRes, shortTermRes] = await Promise.all([
+          getQuote(symbol, 'max', '1d'),
+          getQuote(symbol, '5d', '1h')
+        ]);
 
-        setData(generateMockData(numPoints));
+        // Debug: Log the data received from the API
+        console.log('Long term response:', longTermRes);
+        console.log('Short term response:', shortTermRes);
+
+        const formatData = (res) => (res && res.historicalDataPrice
+          ? res.historicalDataPrice.map(item => ({
+            timestamp: item.date,
+            date: new Date(item.date * 1000).toLocaleDateString('pt-BR'),
+            price: item.close,
+          }))
+          : []
+        );
+
+        setLongTermData({ symbol, data: formatData(longTermRes) });
+        setShortTermData({ symbol, data: formatData(shortTermRes) });
+
       } catch (error) {
         console.error("Erro ao buscar dados do gráfico:", error);
-        setData([]);
+        setLongTermData({ symbol, data: [] });
+        setShortTermData({ symbol, data: [] });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchChartData();
-  }, [symbol, range]);
+    fetchAllData();
+  }, [symbol, longTermData.symbol]);
+
+  useEffect(() => {
+    const filterData = () => {
+      const now = new Date();
+      let startDate = new Date();
+      let sourceData = [];
+      let timeFormat = {};
+
+      if (range === '1d' || range === '5d') {
+        sourceData = shortTermData.data;
+        const oneDayMillis = 24 * 60 * 60 * 1000;
+        const fiveDaysMillis = 5 * oneDayMillis;
+        
+        if (range === '1d') {
+            const yesterday = now.getTime() - oneDayMillis;
+            sourceData = sourceData.filter(d => (d.timestamp * 1000) >= yesterday);
+        } else { // 5d
+            const fiveDaysAgo = now.getTime() - fiveDaysMillis;
+            sourceData = sourceData.filter(d => (d.timestamp * 1000) >= fiveDaysAgo);
+        }
+        timeFormat = { hour: '2-digit', minute: '2-digit' };
+
+      } else {
+        sourceData = longTermData.data;
+        switch (range) {
+          case '1mo':
+            startDate.setMonth(now.getMonth() - 1);
+            break;
+          case '3mo':
+            startDate.setMonth(now.getMonth() - 3);
+            break;
+          case '6mo':
+            startDate.setMonth(now.getMonth() - 6);
+            break;
+          case '1y':
+            startDate.setFullYear(now.getFullYear() - 1);
+            break;
+          case '5y':
+            startDate.setFullYear(now.getFullYear() - 5);
+            break;
+          case 'max':
+            setChartData(sourceData);
+            return;
+          default:
+            break;
+        }
+        sourceData = sourceData.filter(d => (d.timestamp * 1000) >= startDate.getTime());
+      }
+      
+      const formattedData = sourceData.map(d => ({
+        ...d,
+        date: new Date(d.timestamp * 1000).toLocaleDateString('pt-BR', timeFormat)
+      }));
+
+      setChartData(formattedData);
+    };
+
+    if ((range === '1d' || range === '5d') && shortTermData.data.length > 0) {
+        filterData();
+    } else if (longTermData.data.length > 0) {
+        filterData();
+    }
+
+  }, [range, longTermData, shortTermData]);
+
 
   const handleRangeChange = (newRange) => {
     setRange(newRange);
@@ -84,13 +153,7 @@ const AssetChart = ({ symbol }) => {
     { value: 'max', label: 'Máx' },
   ];
 
-  if (loading) {
-    return <p className="text-center text-gray-500 dark:text-gray-400">Carregando gráfico...</p>;
-  }
-
-  if (!data || data.length === 0) {
-    return <p className="text-center text-gray-500 dark:text-gray-400">Não há dados para exibir o gráfico.</p>;
-  }
+  const displayData = useMemo(() => chartData, [chartData]);
 
   return (
     <div className="flex flex-col w-full h-full">
@@ -107,26 +170,32 @@ const AssetChart = ({ symbol }) => {
         ))}
       </div>
       <div className="grow w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data}>
-            <defs>
-              <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-            <YAxis 
-              domain={[dataMin => dataMin * 0.99, dataMax => dataMax * 1.01]}
-              tickFormatter={(value) => value.toFixed(2)} 
-              tick={{ fontSize: 10 }}
-              width={40}
-            />
-            <CartesianGrid strokeDasharray="3 3" />
-            <Tooltip content={<CustomTooltip />} />
-            <Area type="linear" dataKey="price" stroke="#8884d8" fillOpacity={1} fill="url(#colorPrice)" />
-          </AreaChart>
-        </ResponsiveContainer>
+        {loading && <p className="text-center text-gray-500 dark:text-gray-400">Carregando gráfico...</p>}
+        {!loading && (!displayData || displayData.length === 0) && (
+          <p className="text-center text-gray-500 dark:text-gray-400">Não há dados para exibir o gráfico.</p>
+        )}
+        {!loading && displayData && displayData.length > 0 && (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={displayData}>
+              <defs>
+                <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+              <YAxis 
+                domain={[dataMin => dataMin * 0.99, dataMax => dataMax * 1.01]}
+                tickFormatter={(value) => value.toFixed(2)} 
+                tick={{ fontSize: 10 }}
+                width={40}
+              />
+              <CartesianGrid strokeDasharray="3 3" />
+              <Tooltip content={<CustomTooltip />} />
+              <Area type="linear" dataKey="price" stroke="#8884d8" fillOpacity={1} fill="url(#colorPrice)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );
