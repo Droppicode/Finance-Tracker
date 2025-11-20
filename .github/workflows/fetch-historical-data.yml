@@ -1,0 +1,60 @@
+name: Fetch Historical Stock Data
+
+on:
+  # Manual trigger via GitHub UI
+  workflow_dispatch:
+    inputs:
+      symbol:
+        description: 'Stock symbol (e.g., PETR4)'
+        required: true
+        type: string
+      range:
+        description: 'Time range'
+        required: true
+        type: choice
+        options:
+          - 1w
+          - 2w
+          - 1mo
+          - 3mo
+          - 6mo
+          - 1y
+          - max
+  
+  # Trigger via API (repository_dispatch)
+  repository_dispatch:
+    types: [fetch-historical-data]
+
+jobs:
+  fetch-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r .github/scripts/requirements.txt
+      
+      - name: Create Firebase credentials file
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase-creds.json
+      
+      - name: Fetch and save historical data
+        run: |
+          python .github/scripts/fetch_yfinance.py \
+            --symbol "${{ github.event.inputs.symbol || github.event.client_payload.symbol }}" \
+            --range "${{ github.event.inputs.range || github.event.client_payload.range }}" \
+            --firebase-creds firebase-creds.json
+      
+      - name: Clean up credentials
+        if: always()
+        run: |
+          rm -f firebase-creds.json

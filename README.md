@@ -75,6 +75,14 @@ To get a local copy of `fin-track` up and running, follow these steps.
                                                                                           
 3.  **Frontend Setup:**                                                                   
     *   In a new terminal, navigate to the client directory: `cd client`                  
+    *   Create a `.env` file based on `.env.example`:
+        ```bash
+        cp .env.example .env
+        ```
+    *   Fill in the required environment variables:
+        - Firebase configuration (from Firebase Console)
+        - GitHub token for triggering historical data fetch
+        - Your GitHub repository owner and name
     *   Install dependencies:                                                             
         ```bash                                                                           
         npm install                                                                       
@@ -84,6 +92,62 @@ To get a local copy of `fin-track` up and running, follow these steps.
         npm run dev                                                                       
         ```                                                                               
         The frontend will be available at `http://localhost:5173`.                        
+
+## Historical Stock Data Configuration
+
+The application uses **yfinance** to fetch historical stock data via GitHub Actions, which then stores the data in Firestore for the frontend to consume.
+
+### Prerequisites
+
+1. **Firebase Service Account:**
+   - Go to Firebase Console → Project Settings → Service Accounts
+   - Click "Generate New Private Key"
+   - Download the JSON file
+
+2. **GitHub Personal Access Token:**
+   - Go to GitHub Settings → Developer Settings → Personal Access Tokens
+   - Generate a new token with `repo` scope
+   - Copy the token and add it to your frontend `.env` file as `VITE_GITHUB_TOKEN`
+
+3. **GitHub Repository Secrets:**
+   - Go to your repository → Settings → Secrets and variables → Actions
+   - Add a new secret named `FIREBASE_SERVICE_ACCOUNT`
+   - Paste the entire content of your Firebase service account JSON file
+
+### How It Works
+
+1. User selects a time range in the AssetChart component
+2. Frontend checks Firestore for cached data (valid for 24 hours)
+3. If data not found or expired:
+   - Creates a "pending" document in Firestore
+   - Triggers GitHub Actions workflow via repository dispatch
+   - Polls Firestore every 2 seconds (max 30 seconds)
+4. GitHub Actions:
+   - Runs Python script with yfinance
+   - Fetches historical data from Yahoo Finance
+   - Saves to Firestore with status "completed" or "error"
+5. Frontend receives the data and displays the chart
+
+### Firestore Structure
+
+```
+/historical-data/
+  {symbol}_{range}/
+    - status: 'pending' | 'completed' | 'error'
+    - symbol: string
+    - range: string
+    - data: array of {date, open, high, low, close, volume}
+    - fetchedAt: ISO timestamp
+    - error: string (if status is error)
+```
+
+### Manual Testing
+
+You can manually trigger the GitHub Actions workflow:
+1. Go to your repository → Actions → "Fetch Historical Stock Data"
+2. Click "Run workflow"
+3. Enter a symbol (e.g., PETR4) and range (e.g., 1mo)
+4. Check Firestore to see if data was saved correctly
                                                                                           
 ## License                                                                                
                                                                                           

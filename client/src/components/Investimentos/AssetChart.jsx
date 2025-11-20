@@ -3,7 +3,7 @@ import {
     AreaChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area
 } from 'recharts';
 import Button from '../shared/Button';
-import { getQuote } from '../../api/brapi';
+import { getHistoricalData } from '../../api/historicalData';
 
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -24,15 +24,20 @@ const AssetChart = ({ symbol }) => {
     // Cache data for each range to avoid refetching
     const [rangeDataCache, setRangeDataCache] = useState({});
     const [loading, setLoading] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState('Carregando gráfico...');
+    const [error, setError] = useState(null);
     const [range, setRange] = useState('1mo'); // Default range
     const [currentSymbol, setCurrentSymbol] = useState(null);
 
-    // Range configurations with their API parameters
+    // Range configurations
     const rangeConfigs = {
-        '1w': { apiRange: '1mo', interval: '1d', label: '1S' },
-        '2w': { apiRange: '1mo', interval: '1d', label: '2S' },
-        '1mo': { apiRange: '1mo', interval: '1d', label: '1M' },
-        '3mo': { apiRange: '3mo', interval: '1d', label: '3M' },
+        '1w': { label: '1S' },
+        '2w': { label: '2S' },
+        '1mo': { label: '1M' },
+        '3mo': { label: '3M' },
+        '6mo': { label: '6M' },
+        '1y': { label: '1A' },
+        'max': { label: 'Máx' },
     };
 
     // Clear cache when symbol changes
@@ -40,6 +45,7 @@ const AssetChart = ({ symbol }) => {
         if (symbol !== currentSymbol) {
             setRangeDataCache({});
             setChartData([]);
+            setError(null);
             setCurrentSymbol(symbol);
         }
     }, [symbol, currentSymbol]);
@@ -49,29 +55,40 @@ const AssetChart = ({ symbol }) => {
         if (!symbol) return;
 
         // Check if we already have data for this range
-        const cacheKey = `${symbol} -${rangeKey} `;
+        const cacheKey = `${symbol}_${rangeKey}`;
         if (rangeDataCache[cacheKey]) {
             console.log(`Using cached data for ${rangeKey}`);
             return rangeDataCache[cacheKey];
         }
 
         setLoading(true);
+        setError(null);
+        setLoadingMessage('Buscando dados históricos...');
+
         try {
-            const config = rangeConfigs[rangeKey];
-            const res = await getQuote(symbol, config.apiRange, config.interval);
+            // Get data from Firestore (or trigger GitHub Actions if needed)
+            const firestoreData = await getHistoricalData(symbol, rangeKey);
 
-            console.log(`Fetched data for range ${rangeKey}: `, res);
+            console.log(`Fetched data for range ${rangeKey}:`, firestoreData);
 
-            const formatData = (res) => (res && res.historicalDataPrice
-                ? res.historicalDataPrice.map(item => ({
+            // Format data for the chart
+            const formatData = (data) => {
+                if (!data || !data.data || data.data.length === 0) {
+                    return [];
+                }
+
+                return data.data.map(item => ({
                     timestamp: item.date,
                     date: new Date(item.date * 1000).toLocaleDateString('pt-BR'),
                     price: item.close,
-                }))
-                : []
-            );
+                    open: item.open,
+                    high: item.high,
+                    low: item.low,
+                    volume: item.volume,
+                }));
+            };
 
-            const formattedData = formatData(res);
+            const formattedData = formatData(firestoreData);
 
             // Cache the data
             setRangeDataCache(prev => ({
@@ -82,53 +99,25 @@ const AssetChart = ({ symbol }) => {
             return formattedData;
 
         } catch (error) {
-            console.error(`Erro ao buscar dados para ${rangeKey}: `, error);
+            console.error(`Erro ao buscar dados para ${rangeKey}:`, error);
+            setError(error.message || 'Erro ao carregar dados históricos');
             return [];
         } finally {
             setLoading(false);
+            setLoadingMessage('Carregando gráfico...');
         }
     };
 
     // Handle range change - fetch data and filter
     const handleRangeChange = async (newRange) => {
         setRange(newRange);
-
         const data = await fetchRangeData(newRange);
-
-        // Filter data based on the selected range
-        const filterData = (sourceData) => {
-            if (!sourceData || sourceData.length === 0) return [];
-
-            const now = new Date();
-            let startDate = new Date();
-
-            switch (newRange) {
-                case '1w':
-                    startDate.setDate(now.getDate() - 7);
-                    break;
-                case '2w':
-                    startDate.setDate(now.getDate() - 14);
-                    break;
-                case '1mo':
-                case '3mo':
-                case '6mo':
-                case '1y':
-                case 'max':
-                    // Show all data from API response
-                    return sourceData;
-                default:
-                    return sourceData;
-            }
-
-            return sourceData.filter(d => (d.timestamp * 1000) >= startDate.getTime());
-        };
-
-        setChartData(filterData(data));
+        setChartData(data);
     };
 
     // Load default range on mount
     useEffect(() => {
-        if (symbol && !chartData.length) {
+        if (symbol && !chartData.length && !loading) {
             handleRangeChange(range);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -143,7 +132,7 @@ const AssetChart = ({ symbol }) => {
 
     return (
         <div className="flex flex-col w-full h-full">
-            <div className="flex justify-center gap-2 mb-4">
+            <div className="flex justify-center gap-2 mb-4 flex-wrap">
                 {ranges.map(r => (
                     <Button
                         key={r.value}
@@ -157,11 +146,29 @@ const AssetChart = ({ symbol }) => {
                 ))}
             </div>
             <div className="grow w-full">
-                {loading && <p className="text-center text-gray-500 dark:text-gray-400">Carregando gráfico...</p>}
-                {!loading && (!displayData || displayData.length === 0) && (
-                    <p className="text-center text-gray-500 dark:text-gray-400">Não há dados para exibir o gráfico.</p>
+                {loading && (
+                    <p className="text-center text-gray-500 dark:text-gray-400">
+                        {loadingMessage}
+                    </p>
                 )}
-                {!loading && displayData && displayData.length > 0 && (
+                {!loading && error && (
+                    <div className="text-center">
+                        <p className="text-red-500 dark:text-red-400 mb-2">{error}</p>
+                        <Button
+                            variant="secondary"
+                            onClick={() => handleRangeChange(range)}
+                            className="px-4 py-2 text-sm"
+                        >
+                            Tentar novamente
+                        </Button>
+                    </div>
+                )}
+                {!loading && !error && (!displayData || displayData.length === 0) && (
+                    <p className="text-center text-gray-500 dark:text-gray-400">
+                        Não há dados para exibir o gráfico.
+                    </p>
+                )}
+                {!loading && !error && displayData && displayData.length > 0 && (
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={displayData}>
                             <defs>
