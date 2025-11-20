@@ -148,6 +148,18 @@ You can manually trigger the GitHub Actions workflow:
 2. Click "Run workflow"
 3. Enter a symbol (e.g., PETR4) and range (e.g., 1mo)
 4. Check Firestore to see if data was saved correctly
+
+### Scheduled Automatic Refresh
+
+A **scheduled GitHub Actions workflow** runs daily at 2 AM UTC (11 PM BRT) to automatically refresh historical data for all symbols already in Firestore. This ensures:
+
+- ✅ Data is always fresh (< 12 hours old)
+- ✅ Users experience instant loading (data pre-cached)
+- ✅ Only updates symbols that are older than 12 hours
+
+**Manual trigger:** Go to Actions → "Scheduled Data Refresh" → Run workflow
+
+See [.github/docs/SCHEDULED-REFRESH.md](file:///.github/docs/SCHEDULED-REFRESH.md) for details.
                                                                                           
 ## License                                                                                
                                                                                           
