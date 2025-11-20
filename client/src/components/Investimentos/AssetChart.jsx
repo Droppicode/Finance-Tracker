@@ -20,9 +20,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const AssetChart = ({ symbol }) => {
-    const [chartData, setChartData] = useState([]);
-    // Cache data for each range to avoid refetching
-    const [rangeDataCache, setRangeDataCache] = useState({});
+    const [allData, setAllData] = useState([]); // All historical data
     const [loading, setLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('Carregando gráfico...');
     const [error, setError] = useState(null);
@@ -31,45 +29,37 @@ const AssetChart = ({ symbol }) => {
 
     // Range configurations
     const rangeConfigs = {
-        '1w': { label: '1S' },
-        '2w': { label: '2S' },
-        '1mo': { label: '1M' },
-        '3mo': { label: '3M' },
-        '6mo': { label: '6M' },
-        '1y': { label: '1A' },
-        'max': { label: 'Máx' },
+        '1w': { label: '1S', days: 7 },
+        '2w': { label: '2S', days: 14 },
+        '1mo': { label: '1M', days: 30 },
+        '3mo': { label: '3M', days: 90 },
+        '6mo': { label: '6M', days: 180 },
+        '1y': { label: '1A', days: 365 },
+        'max': { label: 'Máx', days: null },
     };
 
     // Clear cache when symbol changes
     useEffect(() => {
         if (symbol !== currentSymbol) {
-            setRangeDataCache({});
-            setChartData([]);
+            setAllData([]);
             setError(null);
             setCurrentSymbol(symbol);
         }
     }, [symbol, currentSymbol]);
 
-    // Fetch data for a specific range
-    const fetchRangeData = async (rangeKey) => {
+    // Fetch all historical data (max range) once per symbol
+    const fetchAllData = async () => {
         if (!symbol) return;
-
-        // Check if we already have data for this range
-        const cacheKey = `${symbol}_${rangeKey}`;
-        if (rangeDataCache[cacheKey]) {
-            console.log(`Using cached data for ${rangeKey}`);
-            return rangeDataCache[cacheKey];
-        }
 
         setLoading(true);
         setError(null);
         setLoadingMessage('Buscando dados históricos...');
 
         try {
-            // Get data from Firestore (or trigger GitHub Actions if needed)
-            const firestoreData = await getHistoricalData(symbol, rangeKey);
+            // Get all data from Firestore (or trigger GitHub Actions if needed)
+            const firestoreData = await getHistoricalData(symbol);
 
-            console.log(`Fetched data for range ${rangeKey}:`, firestoreData);
+            console.log(`Fetched all historical data for ${symbol}:`, firestoreData);
 
             // Format data for the chart
             const formatData = (data) => {
@@ -89,46 +79,45 @@ const AssetChart = ({ symbol }) => {
             };
 
             const formattedData = formatData(firestoreData);
-
-            // Cache the data
-            setRangeDataCache(prev => ({
-                ...prev,
-                [cacheKey]: formattedData
-            }));
-
-            return formattedData;
+            setAllData(formattedData);
 
         } catch (error) {
-            console.error(`Erro ao buscar dados para ${rangeKey}:`, error);
+            console.error(`Erro ao buscar dados:`, error);
             setError(error.message || 'Erro ao carregar dados históricos');
-            return [];
         } finally {
             setLoading(false);
             setLoadingMessage('Carregando gráfico...');
         }
     };
 
-    // Handle range change - fetch data and filter
-    const handleRangeChange = async (newRange) => {
-        setRange(newRange);
-        const data = await fetchRangeData(newRange);
-        setChartData(data);
-    };
-
-    // Load default range on mount
+    // Load data on mount or when symbol changes
     useEffect(() => {
-        if (symbol && !chartData.length && !loading) {
-            handleRangeChange(range);
+        if (symbol && allData.length === 0 && !loading && !error) {
+            fetchAllData();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [symbol]);
+
+    // Filter data based on selected range (client-side)
+    const displayData = useMemo(() => {
+        if (!allData || allData.length === 0) return [];
+
+        const config = rangeConfigs[range];
+
+        // If 'max', show all data
+        if (!config.days) return allData;
+
+        // Filter by days
+        const now = Date.now();
+        const cutoffTime = now - (config.days * 24 * 60 * 60 * 1000);
+
+        return allData.filter(d => (d.timestamp * 1000) >= cutoffTime);
+    }, [allData, range]);
 
     const ranges = Object.entries(rangeConfigs).map(([value, config]) => ({
         value,
         label: config.label
     }));
-
-    const displayData = useMemo(() => chartData, [chartData]);
 
     return (
         <div className="flex flex-col w-full h-full">
@@ -137,7 +126,7 @@ const AssetChart = ({ symbol }) => {
                     <Button
                         key={r.value}
                         variant={range === r.value ? 'primary' : 'secondary'}
-                        onClick={() => handleRangeChange(r.value)}
+                        onClick={() => setRange(r.value)}
                         className="px-3 py-1 text-xs"
                         disabled={loading}
                     >
@@ -156,7 +145,7 @@ const AssetChart = ({ symbol }) => {
                         <p className="text-red-500 dark:text-red-400 mb-2">{error}</p>
                         <Button
                             variant="secondary"
-                            onClick={() => handleRangeChange(range)}
+                            onClick={() => fetchAllData()}
                             className="px-4 py-2 text-sm"
                         >
                             Tentar novamente
