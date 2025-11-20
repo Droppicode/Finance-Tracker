@@ -26,3 +26,5 @@ dist-ssr
 .vite
 .env
 .venv
+
+client/android/app/google-services.json
