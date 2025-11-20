@@ -2,7 +2,7 @@ import os
 import time
 from http.server import BaseHTTPRequestHandler
 import google.generativeai as genai
-from _utils import send_cors_preflight, send_json_response, send_error_response, get_request_body
+from api._utils import send_cors_preflight, send_json_response, send_error_response, get_request_body
 
 MAX_RETRIES = 3
 RETRY_DELAY_MS = 2000  # 2 seconds

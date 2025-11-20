@@ -1,6 +1,6 @@
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
-from _utils import send_cors_preflight, send_text_response
+from api._utils import send_cors_preflight, send_text_response
 
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):

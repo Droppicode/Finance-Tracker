@@ -1,7 +1,7 @@
 import requests
 import os
 from http.server import BaseHTTPRequestHandler
-from _utils import send_cors_preflight, send_json_response, send_error_response, get_request_body
+from api._utils import send_cors_preflight, send_json_response, send_error_response, get_request_body
 
 BASE_URL = "https://brapi.dev/api"
 

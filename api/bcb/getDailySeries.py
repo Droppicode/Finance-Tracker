@@ -1,7 +1,7 @@
 import requests
 from http.server import BaseHTTPRequestHandler
 from datetime import datetime, timedelta
-from _utils import send_cors_preflight, send_json_response, send_error_response, get_request_body
+from api._utils import send_cors_preflight, send_json_response, send_error_response, get_request_body
 
 BASE_URL = "https://api.bcb.gov.br/dados/serie"
 

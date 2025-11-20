@@ -1,6 +1,6 @@
 import requests
 from http.server import BaseHTTPRequestHandler
-from _utils import send_cors_preflight, send_json_response, send_error_response
+from api._utils import send_cors_preflight, send_json_response, send_error_response
 
 BASE_URL = "https://api.bcb.gov.br/dados/serie"
 
