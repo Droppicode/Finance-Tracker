@@ -43,8 +43,8 @@ def get_all_symbols_from_firestore(db):
         
         symbols = set()
         for doc in docs:
-            data = doc.data()
-            if 'symbol' in data:
+            data = doc.to_dict()  # Use to_dict() instead of data()
+            if data and 'symbol' in data:
                 symbols.add(data['symbol'])
         
         symbols_list = sorted(list(symbols))
