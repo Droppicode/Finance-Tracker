@@ -1,166 +1,93 @@
-# fin-track                                                                               
-                                                                                          
-A personal finance tracker SPA built with React and Django. It helps users track expenses 
-and investments through a clean, dark-mode interface. Features include PDF statement proce
-ssing, transaction classification, and portfolio visualization.                           
-                                                                                          
-*This project was developed as an experiment in AI-assisted programming. A significant por
-tion of the codebase was generated with the help of Google's Gemini, with human oversight 
-for review, integration, and testing.*                                                    
-                                                                                          
-## Core Features                                                                          
-                                                                                          
-*   PDF Bank Statement Upload & Processing                                                
-*   Automatic & Manual Transaction Categorization                                         
-*   Expense Analysis with Charts                                                          
-*   Investment Portfolio Tracking                                                         
-*   User Authentication (JWT & Google OAuth)                                              
-                                                                                          
-## Tech Stack                                                                             
-                                                                                          
-*   **Frontend:** React, Vite, Tailwind CSS, Recharts                                     
-*   **Backend:** Django, Django Rest Framework, PostgreSQL                                
-*   **Containerization:** Docker                                                          
-                                                                                          
-## Getting Started                                                                        
-                                                                                          
-To get a local copy of `fin-track` up and running, follow these steps.                    
-                                                                                          
-### Prerequisites                                                                         
-                                                                                          
-*   Node.js and npm                                                                       
-*   Python 3.9+ and pip                                                                   
-*   Docker and Docker Compose                                                             
-                                                                                          
-### Local Development                                                                     
-                                                                                          
-1.  **Clone the repository:**                                                             
-    ```bash                                                                               
-    git clone https://github.com/your_username/fin-track.git                              
-    cd fin-track                                                                          
-    ```                                                                                   
-                                                                                          
-2.  **Backend Setup:**                                                                    
-    *   Navigate to the backend directory: `cd backend`                                   
-    *   Create a `.env` file. You can use the following as a template:                    
-        ```env                                                                            
-        # backend/.env                                                                    
-        DB_NAME=fintrack_db                                                               
-        DB_USER=fintrack_user                                                             
-        DB_PASSWORD=fintrack_password                                                     
-        DB_HOST=postgres                                                                  
-        DB_PORT=5432                                                                      
-        SECRET_KEY='your-strong-secret-key'                                               
-        # Add other secrets like Google API keys if needed                                
-        ```                                                                               
-    *   Start the PostgreSQL database using Docker:                                       
-        ```bash                                                                           
-        docker-compose up -d                                                              
-        ```                                                                               
-    *   Set up a Python virtual environment and install dependencies:                     
-        ```bash                                                                           
-        python3 -m venv .venv                                                             
-        source .venv/bin/activate                                                         
-        pip install -r requirements.txt                                                   
-        ```                                                                               
-    *   Apply database migrations:                                                        
-        ```bash                                                                           
-        python3 manage.py migrate                                                         
-        ```                                                                               
-    *   Run the backend server:                                                           
-        ```bash                                                                           
-        python3 manage.py runserver                                                       
-        ```                                                                               
-        The backend will be available at `http://127.0.0.1:8000`.                         
-                                                                                          
-3.  **Frontend Setup:**                                                                   
-    *   In a new terminal, navigate to the client directory: `cd client`                  
-    *   Create a `.env` file based on `.env.example`:
-        ```bash
-        cp .env.example .env
-        ```
-    *   Fill in the required environment variables:
-        - Firebase configuration (from Firebase Console)
-        - GitHub token for triggering historical data fetch
-        - Your GitHub repository owner and name
-    *   Install dependencies:                                                             
-        ```bash                                                                           
-        npm install                                                                       
-        ```                                                                               
-    *   Run the frontend development server:                                              
-        ```bash                                                                           
-        npm run dev                                                                       
-        ```                                                                               
-        The frontend will be available at `http://localhost:5173`.                        
+# 💰 fin-track
 
-## Historical Stock Data Configuration
+> **Seu dinheiro, suas regras.**  
+> Rastreie gastos, monitore investimentos e tome decisões financeiras mais inteligentes — tudo em uma interface elegante e intuitiva.
 
-The application uses **yfinance** to fetch historical stock data via GitHub Actions, which then stores the data in Firestore for the frontend to consume.
+<p align="center">
+  <img src="https://img.shields.io/badge/React-19.1-61DAFB?style=flat&logo=react" alt="React"/>
+  <img src="https://img.shields.io/badge/Vite-7.1-646CFF?style=flat&logo=vite" alt="Vite"/>
+  <img src="https://img.shields.io/badge/TailwindCSS-4.1-06B6D4?style=flat&logo=tailwindcss" alt="Tailwind"/>
+  <img src="https://img.shields.io/badge/Firebase-12.5-FFCA28?style=flat&logo=firebase" alt="Firebase"/>
+  <img src="https://img.shields.io/badge/License-MIT-success" alt="License"/>
+</p>
 
-### Prerequisites
+---
 
-1. **Firebase Service Account:**
-   - Go to Firebase Console → Project Settings → Service Accounts
-   - Click "Generate New Private Key"
-   - Download the JSON file
+## ✨ Recursos
 
-2. **GitHub Personal Access Token:**
-   - Go to GitHub Settings → Developer Settings → Personal Access Tokens
-   - Generate a new token with `repo` scope
-   - Copy the token and add it to your frontend `.env` file as `VITE_GITHUB_TOKEN`
+- 📄 **Upload de Extratos Bancários** — Faça upload de PDFs e classifique transações automaticamente
+- 📊 **Análise de Gastos** — Visualize seus gastos por categoria com gráficos interativos
+- 💹 **Portfolio de Investimentos** — Acompanhe seus ativos com cotações em tempo real via yfinance
+- 🌙 **Modo Escuro** — Interface moderna que se adapta ao seu gosto
+- 🔐 **Autenticação Segura** — Login via JWT ou Google OAuth
+- 📱 **Responsivo** — Funciona perfeitamente em qualquer dispositivo
 
-3. **GitHub Repository Secrets:**
-   - Go to your repository → Settings → Secrets and variables → Actions
-   - Add a new secret named `FIREBASE_SERVICE_ACCOUNT`
-   - Paste the entire content of your Firebase service account JSON file
+## 🚀 Quick Start
 
-### How It Works
+### Pré-requisitos
 
-1. User selects a time range in the AssetChart component
-2. Frontend checks Firestore for cached data (valid for 24 hours)
-3. If data not found or expired:
-   - Creates a "pending" document in Firestore
-   - Triggers GitHub Actions workflow via repository dispatch
-   - Polls Firestore every 2 seconds (max 30 seconds)
-4. GitHub Actions:
-   - Runs Python script with yfinance
-   - Fetches historical data from Yahoo Finance
-   - Saves to Firestore with status "completed" or "error"
-5. Frontend receives the data and displays the chart
+- Node.js 18+
+- Conta Firebase (gratuita)
+- Conta GitHub (para GitHub Actions)
 
-### Firestore Structure
+### Instalação
 
-```
-/historical-data/
-  {symbol}_{range}/
-    - status: 'pending' | 'completed' | 'error'
-    - symbol: string
-    - range: string
-    - data: array of {date, open, high, low, close, volume}
-    - fetchedAt: ISO timestamp
-    - error: string (if status is error)
+```bash
+# Clone o repositório
+git clone https://github.com/seu-usuario/fin-track.git
+cd fin-track/client
+
+# Configure as variáveis de ambiente
+cp .env.example .env
+# Edite .env com suas credenciais Firebase e GitHub
+
+# Instale as dependências e rode o projeto
+npm install
+npm run dev
 ```
 
-### Manual Testing
+🎉 Acesse `http://localhost:5173` e comece a rastrear suas finanças!
 
-You can manually trigger the GitHub Actions workflow:
-1. Go to your repository → Actions → "Fetch Historical Stock Data"
-2. Click "Run workflow"
-3. Enter a symbol (e.g., PETR4) and range (e.g., 1mo)
-4. Check Firestore to see if data was saved correctly
+> **💡 Dica:** Você precisará configurar um projeto Firebase e adicionar as credenciais no arquivo `.env`. Veja a seção de configuração abaixo.
 
-### Scheduled Automatic Refresh
+## 🏗️ Stack Tecnológica
 
-A **scheduled GitHub Actions workflow** runs daily at 2 AM UTC (11 PM BRT) to automatically refresh historical data for all symbols already in Firestore. This ensures:
+| Camada      | Tecnologias                                                   |
+|-------------|---------------------------------------------------------------|
+| Frontend    | React 19, Vite, Tailwind CSS, Recharts, Lucide Icons         |
+| Backend     | Firebase (Firestore, Auth), Vercel Functions (Serverless)    |
+| Cloud       | GitHub Actions (data pipeline com yfinance)                   |
+| Mobile      | Capacitor (Android/iOS)                                       |
 
-- ✅ Data is always fresh (< 12 hours old)
-- ✅ Users experience instant loading (data pre-cached)
-- ✅ Only updates symbols that are older than 12 hours
+## 📈 Dados Históricos de Ações
 
-**Manual trigger:** Go to Actions → "Scheduled Data Refresh" → Run workflow
+fin-track usa um **pipeline automatizado** para buscar dados históricos de ações:
 
-See [.github/docs/SCHEDULED-REFRESH.md](file:///.github/docs/SCHEDULED-REFRESH.md) for details.
-                                                                                          
-## License                                                                                
-                                                                                          
-This project is licensed under the MIT License.
+1. **Frontend** solicita dados e cria um documento "pending" no Firestore
+2. **GitHub Actions** é acionado via repository dispatch
+3. **yfinance** busca dados históricos do Yahoo Finance
+4. **Firestore** armazena os dados com cache de 24 horas
+5. **Frontend** exibe os gráficos instantaneamente
+
+### Configuração
+
+1. Crie uma conta de serviço no Firebase Console
+2. Gere um token do GitHub com escopo `repo`
+3. Adicione `FIREBASE_SERVICE_ACCOUNT` aos secrets do repositório
+4. Configure `VITE_GITHUB_TOKEN` no `.env` do frontend
+
+Um workflow agendado atualiza os dados **diariamente às 2h UTC** para garantir informações sempre atualizadas. 🔄
+
+## 🤖 Desenvolvido com IA
+
+Este projeto foi uma **experiência em programação assistida por IA**. Uma parte significativa do código foi gerada com o auxílio do **Google Gemini**, com supervisão humana para revisão, integração e testes.
+
+## 📝 Licença
+
+MIT © [Marcos]
+
+---
+
+<p align="center">
+  Feito com ❤️ e ☕ • <a href="#-fin-track">Voltar ao topo ↑</a>
+</p>
