@@ -1,7 +1,9 @@
 import { db } from './firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
 
+const BASE_URL = `${API_BASE_URL}/api`; // Base path for Vercel functions
 const COLLECTION_NAME = 'historical-data';
 const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -81,28 +83,19 @@ const createPendingDocument = async (symbol) => {
  */
 export const dispatchGitHubAction = async (symbol) => {
     try {
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-        if (!API_BASE_URL) {
-            console.error('API_BASE_URL is missing. Check environment variables.');
-            return false;
-        }
-
-        const url = `${API_BASE_URL}/dispatchGithubAction`;
-
         console.log(`Dispatching GitHub Action for ${symbol} (max range)`);
 
-        const response = await axios.post(url, {
+        const response = await axios.post(`${BASE_URL}/dispatchGithubAction`, {
             symbol,
             range: 'max'
         });
 
         console.log('GitHub Action dispatched successfully:', response.data);
-        return true;
+        return response.data; // Return consistent data format
 
     } catch (error) {
         console.error('Error dispatching GitHub Action:', error);
-        return false;
+        throw error; // Throw error to be handled by caller (consistent with other API files)
     }
 };
 
@@ -170,14 +163,10 @@ export const getHistoricalData = async (symbol) => {
     console.log('Data not found or expired, requesting new fetch');
 
     // Create pending document
-    await createPendingDocument(symbol);
+    if (!cachedData || cachedData.status !== 'pending') await createPendingDocument(symbol);
 
     // Dispatch GitHub Action
-    const dispatched = await dispatchGitHubAction(symbol);
-
-    if (!dispatched) {
-        throw new Error('Failed to dispatch GitHub Action. Check configuration.');
-    }
+    await dispatchGitHubAction(symbol);
 
     // Wait for data to become available
     const data = await waitForHistoricalData(symbol);

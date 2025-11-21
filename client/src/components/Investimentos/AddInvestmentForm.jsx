@@ -58,31 +58,37 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
     }
   }, [lastSearchTerm]);
 
-    const handleSelectInvestment = useCallback(async (investment) => {
-      setAssetName(`${investment.stock} - ${investment.name}`);
-      setAssetType(investment.type);
-      setSelectedInvestment(investment);
-      setShowSearchPopover(false);
-      setIsEditingPrice(false);
-      setError(null);
-      setSearchResults([]); // Clear search results after selection
-      setLastSearchTerm(null); // Reset last search term
-  
-      setIsPriceLoading(true); // Always fetch the full quote to ensure complete data
-      try {
-        const quote = await getQuote(investment.stock);
-        if (quote) {
-          setAssetPrice(quote.regularMarketPrice);
-          if (onInvestmentSelected) {
-            onInvestmentSelected(quote); // Pass the full quote to the parent
-          }
+  const handleSelectInvestment = useCallback(async (investment) => {
+    setAssetName(`${investment.stock} - ${investment.name}`);
+    setAssetType(investment.type);
+    setSelectedInvestment(investment);
+    setShowSearchPopover(false);
+    setIsEditingPrice(false);
+    setError(null);
+    setSearchResults([]); // Clear search results after selection
+    setLastSearchTerm(null); // Reset last search term
+
+    setIsPriceLoading(true); // Always fetch the full quote to ensure complete data
+    try {
+      const quote = await getQuote(investment.stock);
+      if (quote) {
+        setAssetPrice(quote.regularMarketPrice);
+        if (onInvestmentSelected) {
+          onInvestmentSelected(quote); // Pass the full quote to the parent
         }
-      } catch (error) {
-        console.error("Erro ao buscar cotação do ativo:", error);
-      } finally {
-        setIsPriceLoading(false);
+      } else {
+        setError(`Não foi possível obter o preço atual de ${investment.stock}. Verifique o símbolo do ativo ou tente novamente mais tarde.`);
+        setAssetPrice(null);
       }
-    }, [onInvestmentSelected]);
+    } catch (error) {
+      console.error("Erro ao buscar cotação do ativo:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Erro desconhecido";
+      setError(`Erro ao buscar detalhes de ${investment.stock}: ${errorMessage}. Por favor, tente novamente ou insira o preço manualmente.`);
+      setAssetPrice(null);
+    } finally {
+      setIsPriceLoading(false);
+    }
+  }, [onInvestmentSelected]);
   useEffect(() => {
     const { state, key, pathname } = location;
 
@@ -204,19 +210,20 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
             )}
           </div>
           {isPriceLoading && <p className="text-sm text-gray-500 dark:text-gray-400">Carregando preço...</p>}
-          {assetPrice !== null && (
+          {error && <p className="text-sm text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800">{error}</p>}
+          {(assetPrice !== null || (selectedInvestment && !isPriceLoading)) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preço por unidade</label>
               <div className="flex items-center gap-2">
                 <div className="grow">
-                  {isEditingPrice ? (
+                  {isEditingPrice || assetPrice === null ? (
                     <Input
                       type="number"
                       step="any"
                       placeholder="0.00"
-                      value={assetPrice}
+                      value={assetPrice || ""}
                       onChange={(e) => { setAssetPrice(e.target.value); setError(null); }}
-                      onBlur={() => setIsEditingPrice(false)}
+                      onBlur={() => assetPrice !== null && setIsEditingPrice(false)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
@@ -237,10 +244,11 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
                     </div>
                   )}
                 </div>
-                {selectedInvestment && (
+                {selectedInvestment && assetPrice !== null && (
                   <Button
                     variant="secondary"
                     size="icon"
+                    className="block lg:hidden"
                     onClick={() => navigate(`/investimentos/${selectedInvestment.stock}`, { state: { fromAddInvestmentForm: true, asset: selectedInvestment } })}
                     title="Ver detalhes do ativo"
                   >
@@ -264,7 +272,6 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
                   e.target.closest('form').requestSubmit();
                 }
               }}
-              disabled={assetPrice === null}
             />
           </div>
           <div>
@@ -276,7 +283,6 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
               placeholder="Selecione o tipo..."
             />
           </div>
-          {error && <p className="text-sm text-red-500 dark:text-red-400 mt-2">{error}</p>}
           <Button type="submit" variant="primary" icon={Plus} className="w-full" disabled={loading}>
             Adicionar
           </Button>
