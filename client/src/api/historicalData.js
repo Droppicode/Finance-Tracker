@@ -81,38 +81,23 @@ const createPendingDocument = async (symbol) => {
  */
 export const dispatchGitHubAction = async (symbol) => {
     try {
-        const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_TOKEN;
-        const GITHUB_REPO_OWNER = import.meta.env.VITE_GITHUB_REPO_OWNER;
-        const GITHUB_REPO_NAME = import.meta.env.VITE_GITHUB_REPO_NAME;
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-        if (!GITHUB_TOKEN || !GITHUB_REPO_OWNER || !GITHUB_REPO_NAME) {
-            console.error('GitHub configuration is missing. Check environment variables.');
+        if (!API_BASE_URL) {
+            console.error('API_BASE_URL is missing. Check environment variables.');
             return false;
         }
 
-        const url = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/dispatches`;
+        const url = `${API_BASE_URL}/dispatchGithubAction`;
 
         console.log(`Dispatching GitHub Action for ${symbol} (max range)`);
 
-        const response = await axios.post(
-            url,
-            {
-                event_type: 'fetch-historical-data',
-                client_payload: {
-                    symbol,
-                    range: 'max'
-                }
-            },
-            {
-                headers: {
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Authorization': `token ${GITHUB_TOKEN}`,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
+        const response = await axios.post(url, {
+            symbol,
+            range: 'max'
+        });
 
-        console.log('GitHub Action dispatched successfully:', response.status);
+        console.log('GitHub Action dispatched successfully:', response.data);
         return true;
 
     } catch (error) {
