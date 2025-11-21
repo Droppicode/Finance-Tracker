@@ -1,7 +1,11 @@
 # 💰 fin-track
 
-> **Seu dinheiro, suas regras.**  
-> Rastreie gastos, monitore investimentos e tome decisões financeiras mais inteligentes — tudo em uma interface elegante e intuitiva.
+<p align="right">
+  <strong>🇺🇸 English</strong> | <a href="README.pt-BR.md">🇧🇷 Português</a>
+</p>
+
+> **Your money, your rules.**  
+> Track expenses, monitor investments, and make smarter financial decisions — all in an elegant and intuitive interface.
 
 <p align="center">
   <img src="https://img.shields.io/badge/React-19.1-61DAFB?style=flat&logo=react" alt="React"/>
@@ -13,81 +17,81 @@
 
 ---
 
-## ✨ Recursos
+## ✨ Features
 
-- 📄 **Upload de Extratos Bancários** — Faça upload de PDFs e classifique transações automaticamente
-- 📊 **Análise de Gastos** — Visualize seus gastos por categoria com gráficos interativos
-- 💹 **Portfolio de Investimentos** — Acompanhe seus ativos com cotações em tempo real via yfinance
-- 🌙 **Modo Escuro** — Interface moderna que se adapta ao seu gosto
-- 🔐 **Autenticação Segura** — Login via JWT ou Google OAuth
-- 📱 **Responsivo** — Funciona perfeitamente em qualquer dispositivo
+- 📄 **Bank Statement Upload** — Upload PDFs and automatically classify transactions
+- 📊 **Expense Analysis** — Visualize your spending by category with interactive charts
+- 💹 **Investment Portfolio** — Track your assets with real-time quotes via yfinance
+- 🌙 **Dark Mode** — Modern interface that adapts to your preference
+- 🔐 **Secure Authentication** — Login via JWT or Google OAuth
+- 📱 **Responsive** — Works perfectly on any device
 
 ## 🚀 Quick Start
 
-### Pré-requisitos
+### Prerequisites
 
 - Node.js 18+
-- Conta Firebase (gratuita)
-- Conta GitHub (para GitHub Actions)
+- Firebase account (free)
+- GitHub account (for GitHub Actions)
 
-### Instalação
+### Installation
 
 ```bash
-# Clone o repositório
-git clone https://github.com/seu-usuario/fin-track.git
+# Clone the repository
+git clone https://github.com/your-username/fin-track.git
 cd fin-track/client
 
-# Configure as variáveis de ambiente
+# Configure environment variables
 cp .env.example .env
-# Edite .env com suas credenciais Firebase e GitHub
+# Edit .env with your Firebase and GitHub credentials
 
-# Instale as dependências e rode o projeto
+# Install dependencies and run the project
 npm install
 npm run dev
 ```
 
-🎉 Acesse `http://localhost:5173` e comece a rastrear suas finanças!
+🎉 Navigate to `http://localhost:5173` and start tracking your finances!
 
-> **💡 Dica:** Você precisará configurar um projeto Firebase e adicionar as credenciais no arquivo `.env`. Veja a seção de configuração abaixo.
+> **💡 Tip:** You'll need to set up a Firebase project and add the credentials to the `.env` file. See the configuration section below.
 
-## 🏗️ Stack Tecnológica
+## 🏗️ Tech Stack
 
-| Camada      | Tecnologias                                                   |
+| Layer       | Technologies                                                  |
 |-------------|---------------------------------------------------------------|
 | Frontend    | React 19, Vite, Tailwind CSS, Recharts, Lucide Icons         |
 | Backend     | Firebase (Firestore, Auth), Vercel Functions (Serverless)    |
-| Cloud       | GitHub Actions (data pipeline com yfinance)                   |
+| Cloud       | GitHub Actions (data pipeline with yfinance)                  |
 | Mobile      | Capacitor (Android/iOS)                                       |
 
-## 📈 Dados Históricos de Ações
+## 📈 Historical Stock Data
 
-fin-track usa um **pipeline automatizado** para buscar dados históricos de ações:
+fin-track uses an **automated pipeline** to fetch historical stock data:
 
-1. **Frontend** solicita dados e cria um documento "pending" no Firestore
-2. **GitHub Actions** é acionado via repository dispatch
-3. **yfinance** busca dados históricos do Yahoo Finance
-4. **Firestore** armazena os dados com cache de 24 horas
-5. **Frontend** exibe os gráficos instantaneamente
+1. **Frontend** requests data and creates a "pending" document in Firestore
+2. **GitHub Actions** is triggered via repository dispatch
+3. **yfinance** fetches historical data from Yahoo Finance
+4. **Firestore** stores the data with a 24-hour cache
+5. **Frontend** displays the charts instantly
 
-### Configuração
+### Configuration
 
-1. Crie uma conta de serviço no Firebase Console
-2. Gere um token do GitHub com escopo `repo`
-3. Adicione `FIREBASE_SERVICE_ACCOUNT` aos secrets do repositório
-4. Configure `VITE_GITHUB_TOKEN` no `.env` do frontend
+1. Create a service account in Firebase Console
+2. Generate a GitHub token with `repo` scope
+3. Add `FIREBASE_SERVICE_ACCOUNT` to repository secrets
+4. Configure `VITE_GITHUB_TOKEN` in the frontend `.env`
 
-Um workflow agendado atualiza os dados **diariamente às 2h UTC** para garantir informações sempre atualizadas. 🔄
+A scheduled workflow updates the data **daily at 2 AM UTC** to ensure information is always up to date. 🔄
 
-## 🤖 Desenvolvido com IA
+## 🤖 AI-Assisted Development
 
-Este projeto foi uma **experiência em programação assistida por IA**. Uma parte significativa do código foi gerada com o auxílio do **Google Gemini**, com supervisão humana para revisão, integração e testes.
+This project was an **experiment in AI-assisted programming**. A significant portion of the codebase was generated with the help of **Google Gemini**, with human oversight for review, integration, and testing.
 
-## 📝 Licença
+## 📝 License
 
 MIT © [Marcos]
 
 ---
 
 <p align="center">
-  Feito com ❤️ e ☕ • <a href="#-fin-track">Voltar ao topo ↑</a>
+  Made with ❤️ and ☕ • <a href="#-fin-track">Back to top ↑</a>
 </p>
