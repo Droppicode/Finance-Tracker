@@ -1,19 +1,20 @@
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Set the worker source for pdf.js
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 export const extractTextFromPDF = async (file) => {
-  console.log("Starting PDF text extraction for file:", file.name);
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  let fullText = '';
+    const formData = new FormData();
+    formData.append("file", file);
 
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const textContent = await page.getTextContent();
-    fullText += textContent.items.map(item => item.str).join(' ');
-  }
-  console.log("Finished PDF text extraction. Extracted text length:", fullText.length);
-  return fullText;
+    try {
+        const response = await fetch(`${import.meta.env.VITE_API_OCR_URL}/process`, {
+            method: "POST",
+            body: formData,
+        });
+
+        const data = await response.json();
+        console.log("Resposta do OCR:", data);
+
+        return fullText;
+    } catch (error) {
+        console.error("Erro envio pdf:", error);
+        throw error;
+    }
 };
