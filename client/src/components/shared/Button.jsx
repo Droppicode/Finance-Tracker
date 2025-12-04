@@ -1,4 +1,4 @@
-export default function Button({ children, onClick, variant = 'primary', size, icon: Icon, className = '' }) {
+export default function Button({ children, onClick, variant = 'primary', size, icon: Icon, className = '', disabled = false }) {
   const baseStyle = 'flex items-center justify-center rounded-md font-semibold focus:outline-none focus:ring-2 transition-colors duration-200';
   
   const variants = {
@@ -16,7 +16,7 @@ export default function Button({ children, onClick, variant = 'primary', size, i
   const sizeStyle = sizes[size] || sizes.default;
 
   return (
-    <button onClick={onClick} className={`${baseStyle} ${sizeStyle} ${variants[variant]} ${className}`}>
+    <button onClick={onClick} className={`${baseStyle} ${sizeStyle} ${variants[variant]} ${className}`} disabled={disabled}>
       {Icon && <Icon className={`w-5 h-5 ${children ? 'mr-2' : ''}`} />}
       {children}
     </button>

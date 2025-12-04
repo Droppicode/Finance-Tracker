@@ -32,41 +32,52 @@ export const extractTextFromPDF = async (file, config) => {
     const formData = new FormData();
     formData.append("file", file);
 
-    if (config) {
-        formData.append("config", JSON.stringify(config));
-    }
-
     try {
         const response = await fetch(`${import.meta.env.VITE_API_OCR_URL}/process`, {
-            method: "POST",
-            body: formData,
+          method: "POST",
+          body: formData,
         });
 
         const data = await response.json();
         console.log("Resposta do OCR:", data);
 
-        // This part might need to change depending on the new API response format.
-        // For now, we assume it still returns pages with words.
-        let allLines = []
+        let transactions = []
         if (data.result && Array.isArray(data.result)) {
           for(const page of data.result) {
-              if (page.words && page.words.length > 0) {
-                const lines = groupWordsIntoLines(page.words);
-                console.log("Lines on page ", page.page, ":", lines);
-                allLines = allLines.concat(lines);
+            if (page.words && page.words.length > 0) {
+              const lines = groupWordsIntoLines(page.words);
+              console.log("Lines on page ", page.page, ":", lines);
+
+              for (const line of lines) {
+                if(line[0].box.top > config.tableYBbox.y1 && line[0].box.top + line[0].box.height < config.tableYBbox.y2) {
+                  let transaction = {}, date = "", description = "", value = "";
+                  for (const word of line) {
+                    let mid = word.box.left + word.box.width/2;
+                    if(mid > config.columns[0].bbox.x1 && mid < config.columns[0].bbox.x2) {
+                      date += word.text + " ";
+                    }
+                    if(mid > config.columns[1].bbox.x1 && mid < config.columns[1].bbox.x2) {
+                      description += word.text + " ";
+                    }
+                    if(mid > config.columns[2].bbox.x1 && mid < config.columns[2].bbox.x2) {
+                      value += word.text + " ";
+                    }
+                  }
+                  transaction["date"] = date;
+                  transaction["description"] = description;
+                  transaction["value"] = value;
+                  transactions.push(transaction);
+                }
               }
+            }
           }
         }
 
-        console.log("ALL LINES:", allLines)
+        console.log("transactions:", transactions)
 
-        let fullText = "";
-        for (const line of allLines) {
-            for (const word of line) {
-                fullText += word.text + " ";
-            }
-            fullText += "\n";
-        }
+        console.log("config:", config)
+
+
 
         return fullText;
     } catch (error) {
