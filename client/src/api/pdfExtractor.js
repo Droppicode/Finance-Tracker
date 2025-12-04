@@ -28,9 +28,16 @@ function groupWordsIntoLines(words, tolerance = 20) {
   return lines;
 }
 
-export const extractTextFromPDF = async (file) => {
+export const extractTextFromPDF = async (file, selection = null) => {
     const formData = new FormData();
     formData.append("file", file);
+
+    if (selection) {
+        formData.append("x1", selection.x1);
+        formData.append("y1", selection.y1);
+        formData.append("x2", selection.x2);
+        formData.append("y2", selection.y2);
+    }
 
     try {
         const response = await fetch(`${import.meta.env.VITE_API_OCR_URL}/process`, {
@@ -49,6 +56,14 @@ export const extractTextFromPDF = async (file) => {
         }
 
         console.log("ALL LINES:", allLines)
+
+        let fullText = "";
+        for (const line of allLines) {
+            for (const word of line) {
+                fullText += word.text + " ";
+            }
+            fullText += "\n";
+        }
 
         return fullText;
     } catch (error) {

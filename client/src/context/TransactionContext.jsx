@@ -117,11 +117,11 @@ export const TransactionProvider = ({ children }) => {
     updateDates(start, end);
   }
 
-  const handleProcessStatement = async (file) => {
+  const handleProcessStatement = async (file, selection) => {
     console.log("Starting handleProcessStatement for file:", file.name);
     try {
       showNotification('Processando extrato...', 'info');
-      const extractedText = await extractTextFromPDF(file); // Extract text from PDF
+      const extractedText = await extractTextFromPDF(file, selection); // Extract text from PDF
       console.log("PDF text extracted. Sending to API...");
       const newTransactionsFromAI = await processStatement(extractedText); // Pass extracted text to API
       console.log("API call for processStatement successful. New transactions received:", newTransactionsFromAI.length);
