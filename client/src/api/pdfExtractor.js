@@ -28,15 +28,12 @@ function groupWordsIntoLines(words, tolerance = 20) {
   return lines;
 }
 
-export const extractTextFromPDF = async (file, selection = null) => {
+export const extractTextFromPDF = async (file, config) => {
     const formData = new FormData();
     formData.append("file", file);
 
-    if (selection) {
-        formData.append("x1", selection.x1);
-        formData.append("y1", selection.y1);
-        formData.append("x2", selection.x2);
-        formData.append("y2", selection.y2);
+    if (config) {
+        formData.append("config", JSON.stringify(config));
     }
 
     try {
@@ -48,11 +45,17 @@ export const extractTextFromPDF = async (file, selection = null) => {
         const data = await response.json();
         console.log("Resposta do OCR:", data);
 
+        // This part might need to change depending on the new API response format.
+        // For now, we assume it still returns pages with words.
         let allLines = []
-        for(const page of data.result) {
-            const lines = groupWordsIntoLines(page.words);
-            console.log("Lines on page ", page.page, ":", lines);
-            allLines = allLines.concat(lines);
+        if (data.result && Array.isArray(data.result)) {
+          for(const page of data.result) {
+              if (page.words && page.words.length > 0) {
+                const lines = groupWordsIntoLines(page.words);
+                console.log("Lines on page ", page.page, ":", lines);
+                allLines = allLines.concat(lines);
+              }
+          }
         }
 
         console.log("ALL LINES:", allLines)

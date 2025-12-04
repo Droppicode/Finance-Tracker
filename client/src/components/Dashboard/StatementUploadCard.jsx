@@ -3,7 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import { Document, Page, pdfjs } from 'react-pdf';
 import Button from '../shared/Button';
 import Modal from '../shared/Modal';
-import AreaSelectionModal from './AreaSelectionModal';
+import ConfigModal from './ConfigModal';
 import { Upload, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Settings } from 'lucide-react';
 
 // Configure o worker do PDF.js
@@ -20,8 +20,8 @@ export default function StatementUploadCard({ processStatement }) {
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
-  const [isAreaSelectionOpen, setIsAreaSelectionOpen] = useState(false);
-  const [selection, setSelection] = useState(null);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [config, setConfig] = useState(null);
 
   const onDrop = useCallback(acceptedFiles => {
     setUploadedFile(acceptedFiles[0]);
@@ -29,7 +29,7 @@ export default function StatementUploadCard({ processStatement }) {
     setPageNumber(1);
     setScale(1.0);
     setError(null);
-    setSelection(null);
+    setConfig(null);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -45,7 +45,7 @@ export default function StatementUploadCard({ processStatement }) {
       setIsProcessing(true);
       setError(null);
       try {
-        await processStatement(uploadedFile, selection);
+        await processStatement(uploadedFile, config);
       } catch (error) {
         console.error('Error processing statement:', error);
         setError('Ocorreu um erro ao processar o arquivo. Por favor, tente novamente.');
@@ -59,9 +59,9 @@ export default function StatementUploadCard({ processStatement }) {
     setNumPages(numPages);
   };
 
-  const handleSaveSelection = (newSelection) => {
-    setSelection(newSelection);
-    setIsAreaSelectionOpen(false);
+  const handleSaveConfig = (newConfig) => {
+    setConfig(newConfig);
+    setIsConfigModalOpen(false);
   };
 
   const goToPrevPage = () => setPageNumber(prev => Math.max(prev - 1, 1));
@@ -88,17 +88,18 @@ export default function StatementUploadCard({ processStatement }) {
               <Button onClick={() => setIsPreviewOpen(true)} variant="secondary">
                 Abrir Preview
               </Button>
-              <Button onClick={() => setIsAreaSelectionOpen(true)} variant="secondary">
-                <Settings className="w-4 h-4" />
+              <Button onClick={() => setIsConfigModalOpen(true)} variant="secondary">
+                <Settings className="w-4 h-4 mr-2" />
+                Configurar
               </Button>
-              <Button onClick={handleUpload} variant="primary" disabled={isProcessing}>
+              <Button onClick={handleUpload} variant="primary" disabled={isProcessing || !config}>
                 {isProcessing ? 'Processando...' : 'Processar Arquivo'}
               </Button>
             </div>
           </div>
-          {selection && (
+          {config && (
             <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              Área selecionada: {`(${Math.round(selection.x1)}, ${Math.round(selection.y1)}) para (${Math.round(selection.x2)}, ${Math.round(selection.y2)})`}
+              Configuração de extração salva.
             </div>
           )}
           {error && (
@@ -146,13 +147,13 @@ export default function StatementUploadCard({ processStatement }) {
             </div>
           </Modal>
           
-          {isAreaSelectionOpen && (
-            <AreaSelectionModal
-              isOpen={isAreaSelectionOpen}
-              onClose={() => setIsAreaSelectionOpen(false)}
+          {isConfigModalOpen && (
+            <ConfigModal
+              isOpen={isConfigModalOpen}
+              onClose={() => setIsConfigModalOpen(false)}
               file={uploadedFile}
-              onSave={handleSaveSelection}
-              currentSelection={selection}
+              onSave={handleSaveConfig}
+              currentConfig={config}
             />
           )}
         </div>
