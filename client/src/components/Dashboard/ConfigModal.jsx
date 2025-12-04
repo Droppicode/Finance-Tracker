@@ -25,39 +25,39 @@ const initialConfig = {
 };
 
 const SelectionControl = ({ selectionSteps, setSelectionStepIndex, config }) => {
-  const getColumnStatus = (columnId) => {
-      const column = config.columns.find(c => c.id === columnId);
-      if (!column || !column.enabled) return 'disabled';
-      
-      if (column.id === 'value' && config.valueFormat === 'debit_credit_columns') {
-        return column.bbox_debit && column.bbox_credit ? 'completed' : 'pending';
-      }
-      return column.bbox ? 'completed' : 'pending';
+  const getStepStatus = (step) => {
+    if (step.selectionType === 'y_bbox') {
+      return config.tableYBbox ? 'completed' : 'pending';
+    }
+
+    const column = config.columns.find(c => c.id === step.id);
+    if (!column || !column.enabled) return 'disabled';
+    
+    if (step.selectionType === 'credit') {
+      return column.bbox_credit ? 'completed' : 'pending';
+    }
+    if (step.selectionType === 'debit') {
+      return column.bbox_debit ? 'completed' : 'pending';
+    }
+    return column.bbox ? 'completed' : 'pending';
   };
 
   const handleStepSelect = (stepIndex) => {
       setSelectionStepIndex(stepIndex);
   };
 
-  const requiredColumns = config.columns.filter(c => c.enabled).map(c => c.id);
-
   return (
       <div className="absolute top-4 left-4 z-20 bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md">
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">Marcar Colunas:</h3>
           <div className="space-y-2">
-              {requiredColumns.map(colId => {
-                  const stepIndex = selectionSteps.findIndex(s => s.id === colId);
-                  if (stepIndex === -1) return null;
-                  
-                  const status = getColumnStatus(colId);
-                  const step = selectionSteps[stepIndex];
-
+              {selectionSteps.map((step, index) => {
+                  const status = getStepStatus(step);
                   return (
                       <button
-                        key={colId}
-                        onClick={() => handleStepSelect(stepIndex)}
+                        key={step.id + (step.selectionType || '')}
+                        onClick={() => handleStepSelect(index)}
                         disabled={status === 'disabled'}
-                        className={`w-full text-left px-3 py-1.5 text-sm rounded-md transition-colors flex items-center justify-between ${
+                        className={`w-full text-left text-gray-800 dark:text-gray-200 px-3 py-1.5 text-sm rounded-md transition-colors flex items-center justify-between ${
                           status === 'completed' ? 'bg-green-100 dark:bg-green-800/50 text-green-800 dark:text-green-200' :
                           status === 'pending' ? 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600' :
                           'bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500 cursor-not-allowed'
@@ -332,6 +332,8 @@ export default function ConfigModal({ isOpen, onClose, file, onSave, currentConf
   }, [config.columns]);
 
   const isStep2Valid = useMemo(() => {
+    // Also validate tableYBbox is not null
+    if (!config.tableYBbox) return false;
     return config.columns.every(column => {
       if (!column.enabled) return true;
 
