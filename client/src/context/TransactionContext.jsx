@@ -180,7 +180,7 @@ export const TransactionProvider = ({ children }) => {
         }
         const transactionDate = parsedDate ? parsedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
         
-        const sanitizedValue = parseFloat(String(t.value).replace(/\./g, '').replace(',', '.'));
+        const sanitizedValue = t.value;
 
         return {
             ...t,
@@ -238,7 +238,11 @@ export const TransactionProvider = ({ children }) => {
         category: categoryIdToObjMap.get(t.category_id) || null
       }));
 
-      setTransactions(prev => [...prev, ...newTransactionsWithCategory].sort((a, b) => new Date(b.date) - new Date(a.date)));
+      setTransactions(prev => {
+        const combined = [...prev, ...newTransactionsWithCategory];
+        const unique = Array.from(new Map(combined.map(t => [t.id, t])).values());
+        return unique.sort((a, b) => new Date(b.date) - new Date(a.date));
+      });
 
       showNotification('Extrato processado e transações adicionadas!', 'success');
     } catch (err) {

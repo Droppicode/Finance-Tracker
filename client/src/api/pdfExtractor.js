@@ -108,12 +108,13 @@ export const extractTextFromPDF = async (file, config) => {
                     const description = lineData.description || '';
                     const valueStr = lineData.value || '0';
 
-                    // Parse Brazilian currency format
-                    const cleanedValueStr = valueStr.replace(/\./g, '').replace(',', '.');
+                    // Parse Brazilian currency format, removing currency symbols and adjusting decimal separators.
+                    const cleanedValueStr = valueStr.replace(/[^\d,-]/g, '').replace(',', '.');
                     const numericValue = parseFloat(cleanedValueStr);
 
                     // Ignore transactions with no description or zero value
-                    if (description.length > 0 && numericValue !== 0) {
+                    if (description.length > 0 && !isNaN(numericValue) && numericValue !== 0) {
+                        lineData.value = numericValue;
                         transactions.push(lineData);
                     }
                 }
