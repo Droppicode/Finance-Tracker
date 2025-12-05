@@ -1,9 +1,8 @@
 import { createContext, useState, useEffect, useContext, useMemo } from 'react';
 import { AuthContext } from './AuthContext';
 import { useUtils } from './UtilsContext';
-import { getTransactions, createTransaction, updateTransaction, deleteTransaction } from '../api/transactions';
+import { getTransactions, createTransaction, updateTransaction, deleteTransaction, classifyTransactions } from '../api/transactions';
 import { getCategories, createCategory, deleteCategory } from '../api/categories';
-import { processStatement } from '../api/statement';
 import { getProfile, updateProfile } from '../api/profile';
 import { extractTextFromPDF } from '../api/pdfExtractor'; // Import the new PDF extractor
 
@@ -117,69 +116,124 @@ export const TransactionProvider = ({ children }) => {
     updateDates(start, end);
   }
 
+  const parseBrazilianDate = (dateString) => {
+    if (!dateString || typeof dateString !== 'string') return null;
+
+    const parts = dateString.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    if (!parts) {
+      // Try to parse directly if it's not in DD/MM/YYYY format
+      const d = new Date(dateString);
+      if (!isNaN(d.getTime())) {
+        return d;
+      }
+      return null;
+    }
+    
+    // parts will be [full_match, DD, MM, YYYY]
+    const day = parseInt(parts[1], 10);
+    const month = parseInt(parts[2], 10) - 1; // Month is 0-indexed
+    const year = parseInt(parts[3], 10);
+    
+    const date = new Date(year, month, day);
+
+    // Check if the created date is valid and the parts match
+    if (date.getFullYear() === year && date.getMonth() === month && date.getDate() === day) {
+      return date;
+    }
+
+    return null;
+  };
+
   const handleProcessStatement = async (file, config) => {
-    console.log("Starting handleProcessStatement for file:", file.name);
+    console.log("DEBUG: Starting handleProcessStatement for file:", file.name, "with config:", config);
     try {
       showNotification('Processando extrato...', 'info');
-      const extractedText = await extractTextFromPDF(file, config); // Extract text from PDF
-      console.log("PDF text extracted. Sending to API...");
-      const newTransactionsFromAI = await processStatement(extractedText); // Pass extracted text to API
-      console.log("API call for processStatement successful. New transactions received:", newTransactionsFromAI.length);
+      
+      // Step 1: Extract transactions from PDF.
+      const extractedTransactions = await extractTextFromPDF(file, config);
+      console.log("DEBUG: Extracted transactions from PDF:", extractedTransactions);
 
-      if (!newTransactionsFromAI || newTransactionsFromAI.length === 0) {
+      if (!extractedTransactions || extractedTransactions.length === 0) {
         showNotification('Nenhuma transação encontrada no extrato.', 'info');
         return;
       }
 
-      // 1. Get current categories and create a map for quick lookup
+      // Step 2: Classify transactions.
+      showNotification('Classificando transações...', 'info');
+      const descriptions = extractedTransactions.map(t => t.description);
+      console.log("DEBUG: Sending descriptions for classification:", descriptions);
+      
+      const classificationResults = await classifyTransactions(descriptions);
+      console.log("DEBUG: Received classification results:", classificationResults);
+      
+      const categoryMap = new Map(classificationResults.map(r => [r.description, r.category]));
+
+      // Step 3: Merge classification results and sanitize data.
+      const newTransactionsFromAI = extractedTransactions.map(t => {
+        const parsedDate = parseBrazilianDate(t.date);
+        if (!parsedDate) {
+            console.warn(`DEBUG: Invalid date format for transaction: '${t.description}'. Using today's date as fallback. Original date was:`, t.date);
+        }
+        const transactionDate = parsedDate ? parsedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+        
+        const sanitizedValue = parseFloat(String(t.value).replace(/\./g, '').replace(',', '.'));
+
+        return {
+            ...t,
+            category: categoryMap.get(t.description) || 'Outros',
+            date: transactionDate,
+            amount: sanitizedValue,
+            type: sanitizedValue < 0 ? 'debit' : 'credit' 
+        }
+      });
+      console.log("DEBUG: Merged and sanitized transactions:", newTransactionsFromAI);
+
+      // Step 4: Get existing categories and find new ones to create.
       let allCategories = await getCategories();
       const categoryNameToIdMap = new Map(allCategories.map(c => [c.name, c.id]));
-
-      // 2. Find and create any new categories suggested by the AI
       const newCategoryNames = [...new Set(newTransactionsFromAI.map(t => t.category).filter(Boolean))];
       const categoriesToCreate = newCategoryNames.filter(name => !categoryNameToIdMap.has(name));
+      
+      console.log("DEBUG: New categories to create:", categoriesToCreate);
 
       if (categoriesToCreate.length > 0) {
         for (const name of categoriesToCreate) {
           await createCategory({ name });
         }
-        // Refresh categories list
-        allCategories = await getCategories();
+        allCategories = await getCategories(); // Refresh categories
       }
       
-      // Update categories in state
       setCategories(allCategories);
-      
-      // Create a new map with potentially new categories
       const updatedCategoryNameToObjMap = new Map(allCategories.map(c => [c.name, c]));
 
-      // 3. Prepare transaction data for creation
+      // Step 5: Prepare transactions for database insertion.
       const transactionsToCreate = newTransactionsFromAI.map(t => {
         const category = updatedCategoryNameToObjMap.get(t.category);
         return {
           description: t.description,
-          amount: t.amount,
+          amount: Math.abs(t.amount), // Amount should be positive
           date: t.date,
           type: t.type,
           category_id: category ? category.id : null,
         };
       });
+      console.log("DEBUG: Transactions prepared for creation:", transactionsToCreate);
 
-      // 4. Create transactions in the backend
+      // Step 6: Create transactions in the backend.
       const createdTransactions = [];
       for (const t of transactionsToCreate) {
         const newTrans = await createTransaction(t);
         createdTransactions.push(newTrans);
       }
+      console.log("DEBUG: Transactions created in DB:", createdTransactions);
 
-      // 5. Add the full category object to the created transactions
+      // Step 7: Update local state.
       const categoryIdToObjMap = new Map(allCategories.map(c => [c.id, c]));
       const newTransactionsWithCategory = createdTransactions.map(t => ({
         ...t,
         category: categoryIdToObjMap.get(t.category_id) || null
       }));
 
-      // 6. Update the transactions state
       setTransactions(prev => [...prev, ...newTransactionsWithCategory].sort((a, b) => new Date(b.date) - new Date(a.date)));
 
       showNotification('Extrato processado e transações adicionadas!', 'success');

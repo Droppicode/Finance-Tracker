@@ -34,3 +34,27 @@ export const deleteTransaction = (id) => {
     const transactionDoc = doc(transactionsCol, id);
     return deleteDoc(transactionDoc);
 };
+
+export const classifyTransactions = async (descriptions) => {
+    try {
+        const response = await fetch('https://classify-transactions.vercel.app/api/classify', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ descriptions }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to classify transactions');
+        }
+
+        const result = await response.json();
+        return result.data.results;
+    } catch (error) {
+        console.error('Error classifying transactions:', error);
+        // Returns an empty array to avoid breaking the flow
+        return [];
+    }
+};
