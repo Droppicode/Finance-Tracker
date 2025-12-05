@@ -4,8 +4,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import { useConfigs } from '../../context/ConfigContext';
 import Button from '../shared/Button';
 import Modal from '../shared/Modal';
-import ConfigModal from './ConfigModal';
-import { Upload, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Settings } from 'lucide-react';
+import { Upload, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 
 // Configure o worker do PDF.js
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -13,25 +12,23 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
-export default function StatementUploadCard({ processStatement }) {
-  const [uploadedFile, setUploadedFile] = useState(null);
+export default function StatementUploadCard({ processStatement, uploadedFile, onFileDrop, renderConfigButton }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
-  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   
   const { selectedConfig } = useConfigs();
 
   const onDrop = useCallback(acceptedFiles => {
-    setUploadedFile(acceptedFiles[0]);
+    onFileDrop(acceptedFiles[0]);
     setIsPreviewOpen(false);
     setPageNumber(1);
     setScale(1.0);
     setError(null);
-  }, []);
+  }, [onFileDrop]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -47,6 +44,7 @@ export default function StatementUploadCard({ processStatement }) {
       setError(null);
       try {
         await processStatement(uploadedFile, selectedConfig);
+        onFileDrop(null); // Clear file after successful upload
       } catch (error) {
         console.error('Error processing statement:', error);
         setError('Ocorreu um erro ao processar o arquivo. Por favor, tente novamente.');
@@ -84,10 +82,7 @@ export default function StatementUploadCard({ processStatement }) {
               <Button onClick={() => setIsPreviewOpen(true)} variant="secondary">
                 Abrir Preview
               </Button>
-              <Button onClick={() => setIsConfigModalOpen(true)} variant="secondary">
-                <Settings className="w-4 h-4 mr-2" />
-                Configurar
-              </Button>
+              {renderConfigButton && renderConfigButton()}
               <Button onClick={handleUpload} variant="primary" disabled={isProcessing || !selectedConfig}>
                 {isProcessing ? 'Processando...' : 'Processar Arquivo'}
               </Button>
@@ -142,14 +137,6 @@ export default function StatementUploadCard({ processStatement }) {
               </div>
             </div>
           </Modal>
-          
-          {isConfigModalOpen && (
-            <ConfigModal
-              isOpen={isConfigModalOpen}
-              onClose={() => setIsConfigModalOpen(false)}
-              file={uploadedFile}
-            />
-          )}
         </div>
       )}
     </div>

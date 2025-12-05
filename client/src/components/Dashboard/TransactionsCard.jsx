@@ -72,8 +72,8 @@ export default function TransactionsCard({
             <div className="flex items-center gap-4">
               <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Transações</h2>
               {transactions.length > 0 && (
-                <Button onClick={handleClearAll} variant="destructive" size="sm">
-                  Limpar Transações
+                <Button onClick={handleClearAll} variant="danger-ghost" size="sm" className="flex items-center gap-1">
+                  <Trash2 className="w-4 h-4" /> Limpar Transações
                 </Button>
               )}
             </div>

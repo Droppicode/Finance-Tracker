@@ -5,6 +5,7 @@ export default function Button({ children, onClick, variant = 'primary', size, i
     primary: 'bg-blue-600 text-white hover:bg-blue-700',
     secondary: 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600',
     danger: 'bg-red-500 text-white hover:bg-red-600 focus:ring-red-400',
+    'danger-ghost': 'bg-transparent text-red-500 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/50 focus:ring-red-400',
     ghost: 'bg-transparent text-gray-800 hover:bg-gray-200 dark:text-gray-200 dark:hover:bg-gray-700',
   };
 
