@@ -166,10 +166,14 @@ export const TransactionProvider = ({ children }) => {
       const classificationResults = await classifyTransactions(descriptions);
       console.log("DEBUG: Received classification results:", classificationResults);
       
-      const categoryMap = new Map(classificationResults.map(r => [r.description, r.category]));
+      // Create a map for easy lookup of classification results by description
+      const resultMap = new Map(classificationResults.map(r => [r.description, { category: r.category, confidence: r.confidence }]));
 
       // Step 3: Merge classification results and sanitize data.
       const newTransactionsFromAI = extractedTransactions.map(t => {
+        const result = resultMap.get(t.description);
+        const category = result && result.confidence >= 0.35 ? result.category : 'Outros';
+
         const parsedDate = parseBrazilianDate(t.date);
         if (!parsedDate) {
             console.warn(`DEBUG: Invalid date format for transaction: '${t.description}'. Using today's date as fallback. Original date was:`, t.date);
@@ -180,7 +184,7 @@ export const TransactionProvider = ({ children }) => {
 
         return {
             ...t,
-            category: categoryMap.get(t.description) || 'Outros',
+            category: category,
             date: transactionDate,
             amount: sanitizedValue,
             type: sanitizedValue < 0 ? 'debit' : 'credit' 
@@ -332,6 +336,26 @@ export const TransactionProvider = ({ children }) => {
     }
   };
 
+  const handleClearAllTransactions = async () => {
+    const originalTransactions = [...transactions];
+    showNotification('Limpando todas as transações...', 'info');
+    // Optimistically update the UI
+    setTransactions([]);
+
+    try {
+      // Create a list of deletion promises
+      const deletionPromises = originalTransactions.map(t => deleteTransaction(t.id));
+      // Wait for all deletions to complete
+      await Promise.all(deletionPromises);
+      showNotification('Todas as transações foram removidas!', 'success');
+    } catch (err) {
+      console.error("Error clearing all transactions:", err);
+      showNotification('Ocorreu um erro ao limpar as transações. Restaurando dados.', 'error');
+      // Rollback UI on error
+      setTransactions(originalTransactions);
+    }
+  };
+
   const value = {
     transactions: filteredTransactions,
     categories,
@@ -345,6 +369,7 @@ export const TransactionProvider = ({ children }) => {
     processStatement: handleProcessStatement,
     addTransaction: handleAddTransaction,
     deleteTransaction: handleDeleteTransaction,
+    clearAllTransactions: handleClearAllTransactions,
     updateTransactionCategory: handleUpdateTransactionCategory,
     updateTransactionDetails,
     addCategory: handleAddCategory,
