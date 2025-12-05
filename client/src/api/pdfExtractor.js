@@ -1,27 +1,40 @@
-function groupWordsIntoLines(words, tolerance = 20) {
+function groupWordsIntoLines(words) {
+  if (!words || words.length === 0) {
+    return [];
+  }
+
+  // Sort words by their vertical position (top coordinate)
   const sortedWords = [...words].sort((a, b) => a.box.top - b.box.top);
 
   const lines = [];
-  let currentLine = [];
-  
-  let lastTop = sortedWords[0].box.top;
+  let currentLine = [sortedWords[0]];
 
-  for (const word of sortedWords) {
-    const currentTop = word.box.top;
+  for (let i = 1; i < sortedWords.length; i++) {
+    const prevWord = sortedWords[i - 1];
+    const currentWord = sortedWords[i];
 
-    if (Math.abs(currentTop - lastTop) <= tolerance) {
-      currentLine.push(word);
+    // Using average height of the two words for the threshold seems more robust
+    const avgHeight = (prevWord.box.height + currentWord.box.height) / 2;
+    const verticalDistance = currentWord.box.top - prevWord.box.top;
+    const threshold = 1.5 * avgHeight;
+
+    if (verticalDistance <= threshold) {
+      // The word is part of the same line
+      currentLine.push(currentWord);
     } else {
-      currentLine.sort((a, b) => a.box.left - b.box.left);
-      lines.push(currentLine);
-
-      currentLine = [word];
-      lastTop = currentTop;
+      // A new line starts
+      // Sort the completed line by horizontal position
+      if (currentLine.length > 0) {
+        //currentLine.sort((a, b) => a.box.left - b.box.left);
+        lines.push(currentLine);
+      }
+      currentLine = [currentWord];
     }
   }
 
+  // Add the last line
   if (currentLine.length > 0) {
-    currentLine.sort((a, b) => a.box.left - b.box.left);
+    //currentLine.sort((a, b) => a.box.left - b.box.left);
     lines.push(currentLine);
   }
 
@@ -51,7 +64,7 @@ export const extractTextFromPDF = async (file, config) => {
         for (const page of data.result) {
             if (!page.words || page.words.length === 0) continue;
 
-            const lines = groupWordsIntoLines(page.words, 5);
+            const lines = groupWordsIntoLines(page.words);
             console.log(`Lines on page ${page.page}:`, lines);
 
             let contentStarted = !config.hasHeader;
@@ -89,8 +102,20 @@ export const extractTextFromPDF = async (file, config) => {
                 // Trim final spaces
                 Object.keys(lineData).forEach(key => lineData[key] = lineData[key].trim());
 
-                if (Object.values(lineData).some(val => val.length > 0)) {
-                    transactions.push(lineData);
+                const hasContent = Object.values(lineData).some(val => val.length > 0);
+
+                if (hasContent) {
+                    const description = lineData.description || '';
+                    const valueStr = lineData.value || '0';
+
+                    // Parse Brazilian currency format
+                    const cleanedValueStr = valueStr.replace(/\./g, '').replace(',', '.');
+                    const numericValue = parseFloat(cleanedValueStr);
+
+                    // Ignore transactions with no description or zero value
+                    if (description.length > 0 && numericValue !== 0) {
+                        transactions.push(lineData);
+                    }
                 }
             }
         }
