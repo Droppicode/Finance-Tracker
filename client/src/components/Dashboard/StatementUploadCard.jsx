@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Document, Page, pdfjs } from 'react-pdf';
+import { useConfigs } from '../../context/ConfigContext';
 import Button from '../shared/Button';
 import Modal from '../shared/Modal';
 import ConfigModal from './ConfigModal';
@@ -21,7 +22,8 @@ export default function StatementUploadCard({ processStatement }) {
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
-  const [config, setConfig] = useState(null);
+  
+  const { selectedConfig } = useConfigs();
 
   const onDrop = useCallback(acceptedFiles => {
     setUploadedFile(acceptedFiles[0]);
@@ -29,7 +31,6 @@ export default function StatementUploadCard({ processStatement }) {
     setPageNumber(1);
     setScale(1.0);
     setError(null);
-    setConfig(null);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -45,7 +46,7 @@ export default function StatementUploadCard({ processStatement }) {
       setIsProcessing(true);
       setError(null);
       try {
-        await processStatement(uploadedFile, config);
+        await processStatement(uploadedFile, selectedConfig);
       } catch (error) {
         console.error('Error processing statement:', error);
         setError('Ocorreu um erro ao processar o arquivo. Por favor, tente novamente.');
@@ -57,11 +58,6 @@ export default function StatementUploadCard({ processStatement }) {
 
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
-  };
-
-  const handleSaveConfig = (newConfig) => {
-    setConfig(newConfig);
-    setIsConfigModalOpen(false);
   };
 
   const goToPrevPage = () => setPageNumber(prev => Math.max(prev - 1, 1));
@@ -92,14 +88,14 @@ export default function StatementUploadCard({ processStatement }) {
                 <Settings className="w-4 h-4 mr-2" />
                 Configurar
               </Button>
-              <Button onClick={handleUpload} variant="primary" disabled={isProcessing || !config}>
+              <Button onClick={handleUpload} variant="primary" disabled={isProcessing || !selectedConfig}>
                 {isProcessing ? 'Processando...' : 'Processar Arquivo'}
               </Button>
             </div>
           </div>
-          {config && (
+          {selectedConfig && (
             <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              Configuração de extração salva.
+              Configuração selecionada: <strong>{selectedConfig.name}</strong>
             </div>
           )}
           {error && (
@@ -152,8 +148,6 @@ export default function StatementUploadCard({ processStatement }) {
               isOpen={isConfigModalOpen}
               onClose={() => setIsConfigModalOpen(false)}
               file={uploadedFile}
-              onSave={handleSaveConfig}
-              currentConfig={config}
             />
           )}
         </div>

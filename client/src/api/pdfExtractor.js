@@ -41,45 +41,64 @@ export const extractTextFromPDF = async (file, config) => {
         const data = await response.json();
         console.log("Resposta do OCR:", data);
 
-        let transactions = []
-        if (data.result && Array.isArray(data.result)) {
-          for(const page of data.result) {
-            if (page.words && page.words.length > 0) {
-              const lines = groupWordsIntoLines(page.words);
-              console.log("Lines on page ", page.page, ":", lines);
-
-              for (const line of lines) {
-                if(line[0].box.top > config.tableYBbox.y1 && line[0].box.top + line[0].box.height < config.tableYBbox.y2) {
-                  let transaction = {}, date = "", description = "", value = "";
-                  for (const word of line) {
-                    let mid = word.box.left + word.box.width/2;
-                    if(mid > config.columns[0].bbox.x1 && mid < config.columns[0].bbox.x2) {
-                      date += word.text + " ";
-                    }
-                    if(mid > config.columns[1].bbox.x1 && mid < config.columns[1].bbox.x2) {
-                      description += word.text + " ";
-                    }
-                    if(mid > config.columns[2].bbox.x1 && mid < config.columns[2].bbox.x2) {
-                      value += word.text + " ";
-                    }
-                  }
-                  transaction["date"] = date;
-                  transaction["description"] = description;
-                  transaction["value"] = value;
-                  transactions.push(transaction);
-                }
-              }
-            }
-          }
+        const transactions = [];
+        if (!data.result || !Array.isArray(data.result) || !config) {
+            return transactions;
         }
 
-        console.log("transactions:", transactions)
+        const enabledColumns = config.columns.filter(c => c.enabled);
 
-        console.log("config:", config)
+        for (const page of data.result) {
+            if (!page.words || page.words.length === 0) continue;
 
+            const lines = groupWordsIntoLines(page.words, 5);
+            console.log(`Lines on page ${page.page}:`, lines);
 
+            let contentStarted = !config.hasHeader;
 
-        return fullText;
+            for (const line of lines) {
+                if (!line.length || line[0].box.top < config.tableYBbox.y1 || (line[0].box.top + line[0].box.height) > config.tableYBbox.y2) {
+                    continue;
+                }
+
+                if (config.hasHeader && !contentStarted) {
+                    contentStarted = true;
+                    continue; 
+                }
+
+                const lineData = {};
+                enabledColumns.forEach(c => { lineData[c.id] = '' });
+
+                for (const word of line) {
+                    const mid = word.box.left + word.box.width / 2;
+                    
+                    for (const col of enabledColumns) {
+                        if (col.id === 'value' && config.valueFormat === 'debit_credit_columns') {
+                            if (col.bbox_debit && mid > col.bbox_debit.x1 && mid < col.bbox_debit.x2) {
+                                lineData.value += `-${word.text.trim()} `;
+                            }
+                            if (col.bbox_credit && mid > col.bbox_credit.x1 && mid < col.bbox_credit.x2) {
+                                lineData.value += `${word.text.trim()} `;
+                            }
+                        } else if (col.bbox && mid > col.bbox.x1 && mid < col.bbox.x2) {
+                            lineData[col.id] += `${word.text.trim()} `;
+                        }
+                    }
+                }
+                
+                // Trim final spaces
+                Object.keys(lineData).forEach(key => lineData[key] = lineData[key].trim());
+
+                if (Object.values(lineData).some(val => val.length > 0)) {
+                    transactions.push(lineData);
+                }
+            }
+        }
+
+        console.log("transactions:", transactions);
+        console.log("config:", config);
+
+        return transactions;
     } catch (error) {
         console.error("Erro envio pdf:", error);
         throw error;

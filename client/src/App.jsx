@@ -6,6 +6,7 @@ import { InvestmentProvider } from './context/InvestmentContext';
 import { UtilsProvider, useUtils } from './context/UtilsContext';
 import { RatesProvider } from './context/RatesContext';
 import { OnlineStatusProvider } from './context/OnlineStatusContext';
+import { ConfigProvider } from './context/ConfigContext';
 import { getProfile, updateProfile } from './api/profile';
 import DashboardPage from './pages/Dashboard';
 import GastosPage from './pages/Gastos';
@@ -15,6 +16,7 @@ import LoginPage from './pages/LoginPage';
 import Sidebar from './components/Sidebar';
 import Notification from './components/shared/Notification';
 
+// ... (MainLayout, PrivateRoute, and AppRoutes components remain the same) ...
 const MainLayout = ({ children, isDarkMode, setIsDarkMode }) => {
   const { user, logout } = useContext(AuthContext);
   const { isSidebarOpen, toggleSidebar } = useUtils();
@@ -133,15 +135,17 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <UtilsProvider>
-          <TransactionProvider>
-            <InvestmentProvider>
-              <RatesProvider>
-                <OnlineStatusProvider>
-                  <AppRoutes />
-                </OnlineStatusProvider>
-              </RatesProvider>
-            </InvestmentProvider>
-          </TransactionProvider>
+          <ConfigProvider>
+            <TransactionProvider>
+              <InvestmentProvider>
+                <RatesProvider>
+                  <OnlineStatusProvider>
+                    <AppRoutes />
+                  </OnlineStatusProvider>
+                </RatesProvider>
+              </InvestmentProvider>
+            </TransactionProvider>
+          </ConfigProvider>
         </UtilsProvider>
       </AuthProvider>
     </BrowserRouter>

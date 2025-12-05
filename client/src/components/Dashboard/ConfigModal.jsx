@@ -1,28 +1,17 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import { ZoomIn, ZoomOut, ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, ArrowLeft, ArrowRight, CheckCircle2, Trash2 } from 'lucide-react';
+import { useConfigs } from '../../context/ConfigContext';
 import Modal from '../shared/Modal';
 import Button from '../shared/Button';
 import Select from '../shared/Select';
 import Input from '../shared/Input';
+import { produce } from 'immer';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
   import.meta.url,
 ).toString();
-
-const initialColumn = (id, name, enabled = true) => ({ id, name, enabled, bbox: null, bbox_debit: null, bbox_credit: null });
-const initialConfig = {
-  columns: [
-    initialColumn('date', 'Data'),
-    initialColumn('description', 'Descrição'),
-    initialColumn('value', 'Valor'),
-    initialColumn('balance', 'Saldo', false),
-  ],
-  valueFormat: 'single_column_sign', // or 'debit_credit_columns'
-  hasHeader: true,
-  tableYBbox: null,
-};
 
 const SelectionControl = ({ selectionSteps, setSelectionStepIndex, config }) => {
   const getStepStatus = (step) => {
@@ -73,11 +62,21 @@ const SelectionControl = ({ selectionSteps, setSelectionStepIndex, config }) => 
   );
 };
 
-export default function ConfigModal({ isOpen, onClose, file, onSave, currentConfig }) {
+export default function ConfigModal({ isOpen, onClose, file }) {
+  const { 
+    configs, 
+    selectedConfig, 
+    setSelectedConfigId, 
+    saveConfig, 
+    deleteConfig,
+    initialConfig: contextInitialConfig
+  } = useConfigs();
+  
+  const [localConfig, setLocalConfig] = useState(contextInitialConfig);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [step, setStep] = useState(1);
   const [pageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
-  const [config, setConfig] = useState(currentConfig || initialConfig);
   
   const [isSelecting, setIsSelecting] = useState(false);
   const [startPoint, setStartPoint] = useState(null);
@@ -87,11 +86,31 @@ export default function ConfigModal({ isOpen, onClose, file, onSave, currentConf
 
   const [selectionStepIndex, setSelectionStepIndex] = useState(0);
 
+  useEffect(() => {
+    if (isOpen) {
+      if (selectedConfig && !isCreatingNew) {
+        setLocalConfig(produce(selectedConfig, draft => {
+          // Ensure all parts of the config are well-defined
+          draft.columns = draft.columns || [];
+          draft.valueFormat = draft.valueFormat || 'single_column_sign';
+          draft.hasHeader = draft.hasHeader !== undefined ? draft.hasHeader : true;
+        }));
+      } else {
+        setLocalConfig(contextInitialConfig);
+      }
+      setStep(1);
+      setSelectionStepIndex(0);
+    } else {
+        setStep(1);
+    }
+  }, [isOpen, selectedConfig, isCreatingNew, contextInitialConfig]);
+
   const selectionSteps = useMemo(() => {
+    if (!localConfig) return [];
     const steps = [];
-    config.columns.forEach(col => {
+    localConfig.columns.forEach(col => {
       if (col.enabled) {
-        if (col.id === 'value' && config.valueFormat === 'debit_credit_columns') {
+        if (col.id === 'value' && localConfig.valueFormat === 'debit_credit_columns') {
           steps.push({ ...col, selectionType: 'debit', displayName: `${col.name} (Débito)` });
           steps.push({ ...col, selectionType: 'credit', displayName: `${col.name} (Crédito)` });
         } else {
@@ -101,65 +120,30 @@ export default function ConfigModal({ isOpen, onClose, file, onSave, currentConf
     });
     steps.push({ id: 'y_bbox', selectionType: 'y_bbox', displayName: 'Altura da Tabela' });
     return steps;
-  }, [config.columns, config.valueFormat]);
-
-  const isSelectionFinished = useMemo(() => selectionStepIndex >= selectionSteps.length, [selectionStepIndex, selectionSteps]);
-
-  const tableXBounds = useMemo(() => {
-    const allBboxes = config.columns.flatMap(c => {
-        if (!c.enabled) return [];
-        const bboxes = [];
-        if(c.bbox) bboxes.push(c.bbox);
-        if(c.bbox_debit) bboxes.push(c.bbox_debit);
-        if(c.bbox_credit) bboxes.push(c.bbox_credit);
-        return bboxes;
-    });
-
-    if (allBboxes.length === 0) return null;
-
-    const minX1 = Math.min(...allBboxes.map(b => b.x1));
-    const maxX2 = Math.max(...allBboxes.map(b => b.x2));
-
-    return { x1: minX1, x2: maxX2 };
-  }, [config.columns]);
-
-  useEffect(() => {
-    if (isOpen) {
-      const newConfig = currentConfig ? {...currentConfig} : {...initialConfig};
-      setConfig(newConfig);
-      setStep(1);
-      setSelectionStepIndex(0);
-    }
-  }, [isOpen, currentConfig]);
-
-  useEffect(() => {
-    if (step === 2 && !isSelectionFinished) {
-      setSelectionStepIndex(0);
-    }
-  }, [step]);
-
-
+  }, [localConfig]);
+  
   const handleConfigChange = (field, value) => {
-    setConfig(prev => ({ ...prev, [field]: value }));
+    setLocalConfig(prev => ({ ...prev, [field]: value }));
   };
 
   const handleColumnChange = (index, field, value) => {
-    const newColumns = [...config.columns];
-    newColumns[index] = { ...newColumns[index], [field]: value };
+    const newColumns = produce(localConfig.columns, draft => {
+        draft[index][field] = value;
+    });
     handleConfigChange('columns', newColumns);
   };
   
   const handleColumnBboxChange = (colId, bbox, type) => {
-    const newColumns = config.columns.map(c => {
-      if (c.id === colId) {
-        if (type === 'debit') return { ...c, bbox_debit: bbox };
-        if (type === 'credit') return { ...c, bbox_credit: bbox };
-        return { ...c, bbox };
-      }
-      return c;
+    const newColumns = produce(localConfig.columns, draft => {
+        const col = draft.find(c => c.id === colId);
+        if (col) {
+            if (type === 'debit') col.bbox_debit = bbox;
+            else if (type === 'credit') col.bbox_credit = bbox;
+            else col.bbox = bbox;
+        }
     });
     handleConfigChange('columns', newColumns);
-  }
+  };
 
   const onPageLoadSuccess = useCallback((page) => {
     setPageDimensions({ width: page.width, height: page.height });
@@ -167,19 +151,14 @@ export default function ConfigModal({ isOpen, onClose, file, onSave, currentConf
 
   const getPdfCoords = (e) => {
     if (!pageRef.current || !pageDimensions) return null;
-    
     const rect = pageRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-
-    const pdfX = x / scale;
-    const pdfY = y / scale;
-
-    return { x: pdfX, y: pdfY };
+    return { x: x / scale, y: y / scale };
   };
 
   const handleMouseDown = (e) => {
-    if (!pageDimensions || step !== 2 || isSelectionFinished) return;
+    if (!pageDimensions || step !== 2) return;
     e.preventDefault();
     setIsSelecting(true);
     const coords = getPdfCoords(e);
@@ -189,8 +168,7 @@ export default function ConfigModal({ isOpen, onClose, file, onSave, currentConf
 
   const handleMouseMove = (e) => {
     if (!isSelecting || !pageDimensions || step !== 2) return;
-    const coords = getPdfCoords(e);
-    setEndPoint(coords);
+    setEndPoint(getPdfCoords(e));
   };
 
   const handleMouseUp = () => {
@@ -203,28 +181,17 @@ export default function ConfigModal({ isOpen, onClose, file, onSave, currentConf
       };
       if (Math.abs(newSelection.x1 - newSelection.x2) > 2 && Math.abs(newSelection.y1 - newSelection.y2) > 2) {
         const currentStep = selectionSteps[selectionStepIndex];
-        
-        switch(currentStep.selectionType) {
-          case 'column':
-            handleColumnBboxChange(currentStep.id, newSelection);
-            break;
-          case 'debit':
-            handleColumnBboxChange(currentStep.id, newSelection, 'debit');
-            break;
-          case 'credit':
-            handleColumnBboxChange(currentStep.id, newSelection, 'credit');
-            break;
-          case 'y_bbox':
-            handleConfigChange('tableYBbox', newSelection);
-            break;
-          default:
-            break;
-        }
-        // Move to next step only if not editing
-        if (selectionStepIndex < selectionSteps.length -1) {
-            setSelectionStepIndex(prev => prev + 1);
-        } else {
-            setSelectionStepIndex(selectionSteps.length); // Mark as finished
+        if (currentStep) {
+          switch(currentStep.selectionType) {
+            case 'column': handleColumnBboxChange(currentStep.id, newSelection); break;
+            case 'debit': handleColumnBboxChange(currentStep.id, newSelection, 'debit'); break;
+            case 'credit': handleColumnBboxChange(currentStep.id, newSelection, 'credit'); break;
+            case 'y_bbox': handleConfigChange('tableYBbox', newSelection); break;
+            default: break;
+          }
+          if (selectionStepIndex < selectionSteps.length) {
+              setSelectionStepIndex(prev => prev + 1);
+          }
         }
       }
     }
@@ -233,18 +200,23 @@ export default function ConfigModal({ isOpen, onClose, file, onSave, currentConf
     setEndPoint(null);
   };
 
-  const handleSave = () => {
-    onSave(config);
+  const handleSave = async () => {
+    if (!localConfig.name || localConfig.name.trim() === '') {
+      alert("Por favor, dê um nome à configuração.");
+      return;
+    }
+    await saveConfig(localConfig);
+    onClose();
   };
 
   const getSelectionStyle = (points, color, dash, isActive = false) => {
     if (!pageDimensions || !points) return {};
-    
+
     const x1 = points.x1 * scale;
     const y1 = points.y1 * scale;
     const width = (points.x2 - points.x1) * scale;
     const height = (points.y2 - points.y1) * scale;
-  
+
     const style = {
       position: 'absolute',
       left: `${x1}px`,
@@ -255,12 +227,12 @@ export default function ConfigModal({ isOpen, onClose, file, onSave, currentConf
       zIndex: 10,
       cursor: 'pointer',
     };
-  
+
     if (color === '#dc3545' || color === '#007bff') {
       const rgb = color === '#dc3545' ? '220,53,69' : '0,123,255';
       style.backgroundColor = `rgba(${rgb}, 0.2)`;
     }
-  
+
     return style;
   }
 
@@ -271,7 +243,7 @@ export default function ConfigModal({ isOpen, onClose, file, onSave, currentConf
     const y1 = points.y1 * scale;
     const width = (points.x2 - points.x1) * scale;
     const height = (points.y2 - points.y1) * scale;
-    
+
     const capSize = 10;
     const lineThickness = isActive ? 3 : 2;
 
@@ -317,34 +289,65 @@ export default function ConfigModal({ isOpen, onClose, file, onSave, currentConf
         );
     }
 }
-  
-  const zoomIn = () => setScale(prev => prev + 0.2);
-  const zoomOut = () => setScale(prev => Math.max(prev - 0.2, 0.2));
 
-  const tabOptions = [
-    { id: 1, label: '1. Configuração' },
-    { id: 2, label: '2. Seleção de Área' },
-  ];
+  const handleDelete = async () => {
+    if (selectedConfig && window.confirm(`Tem certeza que deseja apagar a configuração "${selectedConfig.name}"?`)) {
+      await deleteConfig(selectedConfig.id);
+      setIsCreatingNew(true); // Switch to creating mode after deletion
+    }
+  };
+  
+  const handleCreateNew = () => {
+    setIsCreatingNew(true);
+    setSelectedConfigId(null);
+    setLocalConfig(contextInitialConfig);
+    setStep(1);
+    setSelectionStepIndex(0);
+  };
+  
+  const handleSelectConfig = (configId) => {
+    setIsCreatingNew(false);
+    setSelectedConfigId(configId);
+  }
 
   const isStep1Valid = useMemo(() => {
+    if (!localConfig) return false;
     const required = ['date', 'description', 'value'];
-    return required.every(id => config.columns.find(c => c.id === id)?.enabled);
-  }, [config.columns]);
+    return required.every(id => localConfig.columns.find(c => c.id === id)?.enabled);
+  }, [localConfig]);
+
+  const isSelectionFinished = useMemo(() => selectionStepIndex >= selectionSteps.length, [selectionStepIndex, selectionSteps]);
+
+  const tableXBounds = useMemo(() => {
+    if (!localConfig) return null;
+    const allBboxes = localConfig.columns.flatMap(c => {
+        if (!c.enabled) return [];
+        const bboxes = [];
+        if(c.bbox) bboxes.push(c.bbox);
+        if(c.bbox_debit) bboxes.push(c.bbox_debit);
+        if(c.bbox_credit) bboxes.push(c.bbox_credit);
+        return bboxes;
+    });
+
+    if (allBboxes.length === 0) return null;
+
+    const minX1 = Math.min(...allBboxes.map(b => b.x1));
+    const maxX2 = Math.max(...allBboxes.map(b => b.x2));
+
+    return { x1: minX1, x2: maxX2 };
+    }, [localConfig]);
 
   const isStep2Valid = useMemo(() => {
-    // Also validate tableYBbox is not null
-    if (!config.tableYBbox) return false;
-    return config.columns.every(column => {
+    if (!localConfig || !localConfig.tableYBbox) return false;
+    return localConfig.columns.every(column => {
       if (!column.enabled) return true;
-
-      if (column.id === 'value' && config.valueFormat === 'debit_credit_columns') {
+      if (column.id === 'value' && localConfig.valueFormat === 'debit_credit_columns') {
         return column.bbox_debit && column.bbox_credit;
       }
-      
       return column.bbox;
     });
-  }, [config]);
-
+  }, [localConfig]);
+  
   const renderHelpText = () => {
     if (step === 1) {
       if (!isStep1Valid) {
@@ -365,195 +368,247 @@ export default function ConfigModal({ isOpen, onClose, file, onSave, currentConf
     return `Selecione a largura da coluna: "${currentStepInfo.displayName}"`;
   }
 
+  const tabOptions = [
+    { id: 1, label: '1. Configuração' },
+    { id: 2, label: '2. Seleção de Área' },
+  ];
+
   const valueFormatOptions = [
     { value: 'single_column_sign', label: 'Coluna única com sinais (+/-)' },
     { value: 'debit_credit_columns', label: 'Colunas separadas de Débito e Crédito' }
   ];
 
+  if (!localConfig) return null;
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Configurar Extração de Extrato" dialogClassName="max-w-5xl w-full">
       <div className="flex flex-col h-[90vh]">
-        <div className="p-4 bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700">
-          <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-              {tabOptions.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => tab.id === 1 || isStep1Valid ? setStep(tab.id) : null}
-                  className={`${ step === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm focus:outline-none ${tab.id === 2 && !isStep1Valid ? 'cursor-not-allowed opacity-50' : ''}`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
-          </div>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mt-4 min-h-[20px]">
-            {renderHelpText()}
-          </p>
+        {/* Management Header */}
+        <div className='p-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700'>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4 items-end'>
+                <div>
+                    <Select
+                        label="Configuração Salva"
+                        value={isCreatingNew ? '' : selectedConfig?.id || ''}
+                        onChange={(e) => handleSelectConfig(e.target.value)}
+                        options={configs.map(c => ({ value: c.id, label: c.name }))}
+                        disabled={configs.length === 0}
+                    />
+                </div>
+                <div className='flex items-center justify-end gap-2'>
+                    <Button onClick={handleCreateNew} variant="secondary">Criar Nova</Button>
+                    <Button onClick={handleDelete} variant="danger" size="icon" disabled={!selectedConfig || isCreatingNew}>
+                        <Trash2 className="w-4 h-4"/>
+                    </Button>
+                </div>
+            </div>
+            {!isCreatingNew && selectedConfig?.id &&
+              <div className='mt-4'>
+                <Input
+                    id="config-name"
+                    label="Nome da Configuração"
+                    value={localConfig.name || ''}
+                    onChange={(e) => handleConfigChange('name', e.target.value)}
+                    placeholder="Ex: Extrato Nubank"
+                />
+              </div>
+            }
+             {isCreatingNew &&
+              <div className='mt-4'>
+                <Input
+                    id="config-name"
+                    label="Nome da Nova Configuração"
+                    value={localConfig.name || ''}
+                    onChange={(e) => handleConfigChange('name', e.target.value)}
+                    placeholder="Ex: Extrato Inter"
+                />
+              </div>
+            }
         </div>
 
-        {step === 1 && (
-           <div className="p-8 flex-grow overflow-y-auto">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <fieldset className="space-y-4">
-                    <legend className="text-lg font-semibold text-gray-800 dark:text-gray-200">Colunas do Extrato</legend>
-                    {config.columns.map((col, index) => (
-                        <div key={col.id} className="flex items-center space-x-4 p-2 rounded-md bg-gray-50 dark:bg-gray-700/50">
-                            <input
-                                type="checkbox"
-                                id={`col-enabled-${col.id}`}
-                                checked={col.enabled}
-                                onChange={(e) => handleColumnChange(index, 'enabled', e.target.checked)}
-                                className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <div className='flex-grow'>
-                               <Input
-                                  id={`col-name-${col.id}`}
-                                  value={col.name}
-                                  onChange={(e) => handleColumnChange(index, 'name', e.target.value)}
-                                  disabled={!col.enabled}
-                                  label={`Nome da Coluna ${index + 1}`}
-                                  className="w-full text-gray-800 dark:text-gray-200"
-                               />
-                            </div>
-                        </div>
-                    ))}
-                </fieldset>
-                <div className="space-y-8">
-                    <fieldset>
-                      <legend className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Formato do Valor</legend>
-                      <Select
-                          id="valueFormat"
-                          label="Como os valores são representados?"
-                          value={config.valueFormat}
-                          onChange={(e) => handleConfigChange('valueFormat', e.target.value)}
-                          options={valueFormatOptions}
-                      />
-                    </fieldset>
-                    <fieldset>
-                      <legend className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Opções Adicionais</legend>
-                       <div className="relative flex items-start">
-                        <div className="flex h-6 items-center">
-                          <input
-                            id="hasHeader"
-                            name="hasHeader"
-                            type="checkbox"
-                            checked={config.hasHeader}
-                            onChange={(e) => handleConfigChange('hasHeader', e.target.checked)}
-                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
-                          />
-                        </div>
-                        <div className="ml-3 text-sm leading-6">
-                          <label htmlFor="hasHeader" className="font-medium text-gray-900 dark:text-gray-100">
-                            Ignorar primeira linha
-                          </label>
-                          <p className="text-gray-500 dark:text-gray-400">Marque se a tabela no extrato contém um cabeçalho.</p>
-                        </div>
-                      </div>
-                    </fieldset>
-                </div>
-             </div>
-           </div>
-        )}
+        <div className="flex-grow flex flex-col min-h-0">
+          {/* Tabs */}
+          <div className="p-4 bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700">
+            <div className="border-b border-gray-200 dark:border-gray-700">
+              <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                {tabOptions.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => tab.id === 1 || isStep1Valid ? setStep(tab.id) : null}
+                    className={`${ step === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm focus:outline-none ${tab.id === 2 && !isStep1Valid ? 'cursor-not-allowed opacity-50' : ''}`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mt-4 min-h-[20px]">
+              {renderHelpText()}
+            </p>
+          </div>
 
-        {step === 2 && (
-          <div 
-            className="relative flex-grow overflow-auto bg-gray-300 dark:bg-gray-700 flex justify-center p-4"
-            onMouseUp={handleMouseUp}
-            onMouseMove={handleMouseMove}
-          >
-            <SelectionControl
-                selectionSteps={selectionSteps}
-                setSelectionStepIndex={setSelectionStepIndex}
-                config={config}
-            />
+          {step === 1 && (
+            <div className="p-8 flex-grow overflow-y-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <fieldset className="space-y-4">
+                      <legend className="text-lg font-semibold text-gray-800 dark:text-gray-200">Colunas do Extrato</legend>
+                      {localConfig.columns.map((col, index) => (
+                          <div key={col.id} className="flex items-center space-x-4 p-2 rounded-md bg-gray-50 dark:bg-gray-700/50">
+                              <input
+                                  type="checkbox"
+                                  id={`col-enabled-${col.id}`}
+                                  checked={col.enabled}
+                                  onChange={(e) => handleColumnChange(index, 'enabled', e.target.checked)}
+                                  className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <div className='flex-grow'>
+                                <Input
+                                    id={`col-name-${col.id}`}
+                                    value={col.name}
+                                    onChange={(e) => handleColumnChange(index, 'name', e.target.value)}
+                                    disabled={!col.enabled}
+                                    label={`Nome da Coluna ${index + 1}`}
+                                    className="w-full text-gray-800 dark:text-gray-200"
+                                />
+                              </div>
+                          </div>
+                      ))}
+                  </fieldset>
+                  <div className="space-y-8">
+                      <fieldset>
+                        <legend className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Formato do Valor</legend>
+                        <Select
+                            id="valueFormat"
+                            label="Como os valores são representados?"
+                            value={localConfig.valueFormat}
+                            onChange={(e) => handleConfigChange('valueFormat', e.target.value)}
+                            options={valueFormatOptions}
+                        />
+                      </fieldset>
+                      <fieldset>
+                        <legend className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Opções Adicionais</legend>
+                        <div className="relative flex items-start">
+                          <div className="flex h-6 items-center">
+                            <input
+                              id="hasHeader"
+                              name="hasHeader"
+                              type="checkbox"
+                              checked={localConfig.hasHeader}
+                              onChange={(e) => handleConfigChange('hasHeader', e.target.checked)}
+                              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+                            />
+                          </div>
+                          <div className="ml-3 text-sm leading-6">
+                            <label htmlFor="hasHeader" className="font-medium text-gray-900 dark:text-gray-100">
+                              Ignorar primeira linha
+                            </label>
+                            <p className="text-gray-500 dark:text-gray-400">Marque se a tabela no extrato contém um cabeçalho.</p>
+                          </div>
+                        </div>
+                      </fieldset>
+                  </div>
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
             <div 
-              ref={pageRef} 
-              className="relative shadow-lg"
+              className="relative flex-grow overflow-auto bg-gray-300 dark:bg-gray-700 flex justify-center p-4"
+              onMouseUp={handleMouseUp}
+              onMouseMove={handleMouseMove}
               onMouseDown={handleMouseDown}
             >
-              <Document file={file} onLoadError={console.error}>
-                <Page 
-                  pageNumber={pageNumber} 
-                  scale={scale} 
-                  onLoadSuccess={onPageLoadSuccess}
-                  renderTextLayer={false} 
-                  renderAnnotationLayer={false}
-                />
-              </Document>
-              {isSelecting && startPoint && endPoint && (
-                <div style={getSelectionStyle({
-                  x1: Math.min(startPoint.x, endPoint.x),
-                  y1: Math.min(startPoint.y, endPoint.y),
-                  x2: Math.max(startPoint.x, endPoint.x),
-                  y2: Math.max(startPoint.y, endPoint.y),
-                }, '#007bff', true)}></div>
-              )}
-              {config.columns.map(c => {
-                if (!c.enabled) return null;
-                
-                const getStepIndex = (type) => selectionSteps.findIndex(s => s.id === c.id && s.selectionType === type);
+              <SelectionControl
+                  selectionSteps={selectionSteps}
+                  setSelectionStepIndex={setSelectionStepIndex}
+                  config={localConfig}
+              />
+              <div 
+                ref={pageRef} 
+                className="relative shadow-lg"
+              >
+                <Document file={file} onLoadError={console.error}>
+                  <Page 
+                    pageNumber={pageNumber} 
+                    scale={scale} 
+                    onLoadSuccess={onPageLoadSuccess}
+                    renderTextLayer={false} 
+                    renderAnnotationLayer={false}
+                  />
+                </Document>
+                {isSelecting && startPoint && endPoint && (
+                  <div style={getSelectionStyle({
+                    x1: Math.min(startPoint.x, endPoint.x),
+                    y1: Math.min(startPoint.y, endPoint.y),
+                    x2: Math.max(startPoint.x, endPoint.x),
+                    y2: Math.max(startPoint.y, endPoint.y),
+                  }, '#007bff', true)}></div>
+                )}
+                {localConfig.columns.map(c => {
+                  if (!c.enabled) return null;
+                  
+                  const getStepIndex = (type) => selectionSteps.findIndex(s => s.id === c.id && s.selectionType === type);
 
-                const boxes = [];
-                if (c.bbox) {
-                    const stepIndex = getStepIndex('column');
-                    boxes.push(<SelectionMarker key={`${c.id}-bbox`} points={c.bbox} color="gray" isActive={selectionStepIndex === stepIndex} onMouseDown={(e) => { e.stopPropagation(); setSelectionStepIndex(stepIndex); }} />);
-                }
-                if (c.bbox_debit) {
-                    const stepIndex = getStepIndex('debit');
-                    boxes.push(<SelectionMarker key={`${c.id}-debit`} points={c.bbox_debit} color="gray" isActive={selectionStepIndex === stepIndex} onMouseDown={(e) => { e.stopPropagation(); setSelectionStepIndex(stepIndex); }} />);
-                }
-                if (c.bbox_credit) {
-                    const stepIndex = getStepIndex('credit');
-                    boxes.push(<SelectionMarker key={`${c.id}-credit`} points={c.bbox_credit} color="gray" isActive={selectionStepIndex === stepIndex} onMouseDown={(e) => { e.stopPropagation(); setSelectionStepIndex(stepIndex); }} />);
-                }
-                return boxes;
-              })}
-              {config.tableYBbox && pageDimensions && (
-                 <SelectionMarker 
-                    points={config.tableYBbox} 
-                    color="gray" 
-                    isVertical={true} 
-                    isActive={selectionStepIndex === selectionSteps.findIndex(s => s.id === 'y_bbox')}
-                    onMouseDown={(e) => { e.stopPropagation(); setSelectionStepIndex(selectionSteps.findIndex(s => s.id === 'y_bbox')); }}
-                 />
-              )}
-              {isSelectionFinished && config.tableYBbox && tableXBounds && (
-                 <div 
-                    style={getSelectionStyle({ ...tableXBounds, y1: config.tableYBbox.y1, y2: config.tableYBbox.y2 }, '#dc3545', false, true)}
-                ></div>
-              )}
+                  const boxes = [];
+                  if (c.bbox) {
+                      const stepIndex = getStepIndex('column');
+                      boxes.push(<SelectionMarker key={`${c.id}-bbox`} points={c.bbox} color="gray" isActive={selectionStepIndex === stepIndex} onMouseDown={(e) => { e.stopPropagation(); setSelectionStepIndex(stepIndex); }} />);
+                  }
+                  if (c.bbox_debit) {
+                      const stepIndex = getStepIndex('debit');
+                      boxes.push(<SelectionMarker key={`${c.id}-debit`} points={c.bbox_debit} color="gray" isActive={selectionStepIndex === stepIndex} onMouseDown={(e) => { e.stopPropagation(); setSelectionStepIndex(stepIndex); }} />);
+                  }
+                  if (c.bbox_credit) {
+                      const stepIndex = getStepIndex('credit');
+                      boxes.push(<SelectionMarker key={`${c.id}-credit`} points={c.bbox_credit} color="gray" isActive={selectionStepIndex === stepIndex} onMouseDown={(e) => { e.stopPropagation(); setSelectionStepIndex(stepIndex); }} />);
+                  }
+                  return boxes;
+                })}
+                {localConfig.tableYBbox && pageDimensions && (
+                   <SelectionMarker 
+                      points={localConfig.tableYBbox} 
+                      color="gray" 
+                      isVertical={true} 
+                      isActive={selectionStepIndex === selectionSteps.findIndex(s => s.id === 'y_bbox')}
+                      onMouseDown={(e) => { e.stopPropagation(); setSelectionStepIndex(selectionSteps.findIndex(s => s.id === 'y_bbox')); }}
+                   />
+                )}
+                {/* Use the localConfig to correctly display the full selection bounding box */}
+                {localConfig.tableYBbox && tableXBounds && (
+                    <div 
+                        style={getSelectionStyle({ ...tableXBounds, y1: localConfig.tableYBbox.y1, y2: localConfig.tableYBbox.y2 }, '#dc3545', false, true)}
+                    ></div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
+        {/* Footer */}
         <div className="p-4 bg-gray-200 dark:bg-gray-900 border-t border-gray-300 dark:border-gray-700 flex justify-between items-center">
           {step === 2 ? (
             <div className="flex items-center space-x-2">
-              <Button onClick={zoomOut} variant="secondary" size="icon">
-                <ZoomOut className="w-5 h-5" />
-              </Button>
+              <Button onClick={() => setScale(s => s - 0.2)} variant="secondary" size="icon"><ZoomOut className="w-5 h-5" /></Button>
               <span className="text-sm text-gray-600 dark:text-gray-300 min-w-[40px] text-center">{(scale * 100).toFixed(0)}%</span>
-              <Button onClick={zoomIn} variant="secondary" size="icon">
-                <ZoomIn className="w-5 h-5" />
-              </Button>
+              <Button onClick={() => setScale(s => s + 0.2)} variant="secondary" size="icon"><ZoomIn className="w-5 h-5" /></Button>
             </div>
           ) : <div></div> }
             
             <div className="flex justify-end space-x-2">
+              <Button onClick={onClose} variant="secondary">Cancelar</Button>
               {step > 1 && (
                 <Button variant="secondary" onClick={() => setStep(step - 1)}>
                   <ArrowLeft className="w-4 h-4 mr-2"/>
                   Voltar
                 </Button>
               )}
-              {step < tabOptions.length ? (
+              {step < 2 ? (
                 <Button variant="primary" onClick={() => setStep(step + 1)} disabled={!isStep1Valid}>
                   Próximo
                   <ArrowRight className="w-4 h-4 ml-2"/>
                 </Button>
               ) : (
-                <Button variant="primary" onClick={handleSave} disabled={!isStep2Valid}>Salvar</Button>
+                <Button variant="primary" onClick={handleSave} disabled={!isStep2Valid}>Salvar Configuração</Button>
               )}
             </div>
         </div>
