@@ -21,6 +21,10 @@
   <img src="https://img.shields.io/badge/License-MIT-success" alt="License"/>
 </p>
 
+<p align="center">
+  <img src=".github/assets/investments.png" alt="Dashboard de Investimentos do Fin-Track" width="800" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />
+</p>
+
 ---
 
 ## ✨ Recursos
@@ -82,6 +86,14 @@ npm run dev
 ```
 
 🎉 Acesse `http://localhost:5173` e comece a monitorar seus investimentos!
+
+## 🧪 Modo Recrutador / Teste
+
+Quer testar a aplicação na prática sem ter que cadastrar nada na mão? Criamos um modo de **Acesso de Visitante**!
+Basta clicar em **"Entrar como Visitante / Teste"** na tela de login. Você entrará em uma sessão limpa e isolada, onde poderá clicar no "Botão Mágico" para preencher o aplicativo instantaneamente com dezenas de dados fakes super realistas, incluindo:
+- 📊 **Carteira Diversificada:** Ações, FIIs, ETFs, BDRs e Criptomoedas.
+- 💸 **Transações:** Despesas e receitas espalhadas pelo mês atual e o mês anterior.
+- 📅 **Datas Dinâmicas:** Os dados são sempre gerados em relação ao dia atual, garantindo que os gráficos de barras estejam sempre perfeitamente preenchidos, não importa quando você teste!
 
 ## 🏗️ Stack Tecnológica
 

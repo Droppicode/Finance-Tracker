@@ -21,6 +21,10 @@
   <img src="https://img.shields.io/badge/License-MIT-success" alt="License"/>
 </p>
 
+<p align="center">
+  <img src=".github/assets/investments.png" alt="Fin-Track Investments Dashboard" width="800" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />
+</p>
+
 ---
 
 ## ✨ Features
@@ -82,6 +86,14 @@ npm run dev
 ```
 
 🎉 Navigate to `http://localhost:5173` and start tracking your investments!
+
+## 🧪 Recruiter / Test Mode
+
+Want to test the application without typing any data manually? We've built a **Guest Login** mode!
+Just click **"Entrar como Visitante / Teste"** on the login page. You will enter a clean, isolated session where you can click the "Magic Button" to instantly populate the application with dozens of realistic mock data, including:
+- 📊 **Diverse Portfolio:** Stocks, FIIs, ETFs, BDRs, and Cryptocurrencies.
+- 💸 **Transactions:** Incomes and expenses spanning the current and previous months.
+- 📅 **Dynamic Dates:** Data is always generated relative to the current day, ensuring charts are always beautifully populated.
 
 ## 🏗️ Tech Stack
 
