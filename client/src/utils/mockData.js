@@ -35,32 +35,32 @@ export const populateMockData = async () => {
         // 3. Create Transactions (Many more to fill the charts!)
         const transactionsData = [
             // Current Month
-            { description: "Salário Empresa", amount: 8500.00, date: getRelativeDate(2), type: "income", category_id: createdCategories["Salário"] },
-            { description: "Supermercado Extra", amount: 650.50, date: getRelativeDate(1), type: "expense", category_id: createdCategories["Alimentação"] },
-            { description: "Uber", amount: 35.00, date: getRelativeDate(0), type: "expense", category_id: createdCategories["Transporte"] },
-            { description: "Cinema e Pipoca", amount: 120.00, date: getRelativeDate(4), type: "expense", category_id: createdCategories["Lazer"] },
-            { description: "Aluguel", amount: 2500.00, date: getRelativeDate(5), type: "expense", category_id: createdCategories["Moradia"] },
-            { description: "Restaurante Fim de Semana", amount: 180.00, date: getRelativeDate(3), type: "expense", category_id: createdCategories["Alimentação"] },
-            { description: "Netflix", amount: 45.90, date: getRelativeDate(2), type: "expense", category_id: createdCategories["Assinaturas"] },
-            { description: "Spotify", amount: 21.90, date: getRelativeDate(1), type: "expense", category_id: createdCategories["Assinaturas"] },
-            { description: "Gasolina", amount: 200.00, date: getRelativeDate(7), type: "expense", category_id: createdCategories["Transporte"] },
-            { description: "Conta de Luz", amount: 150.00, date: getRelativeDate(6), type: "expense", category_id: createdCategories["Moradia"] },
-            { description: "Farmácia", amount: 95.00, date: getRelativeDate(8), type: "expense", category_id: createdCategories["Saúde"] },
-            { description: "Curso Udemy", amount: 39.90, date: getRelativeDate(9), type: "expense", category_id: createdCategories["Educação"] },
-            { description: "Freelance App", amount: 1200.00, date: getRelativeDate(10), type: "income", category_id: createdCategories["Freelance"] },
-            { description: "Roupas Renner", amount: 350.00, date: getRelativeDate(12), type: "expense", category_id: createdCategories["Vestuário"] },
-            { description: "Ifood Hamburguer", amount: 75.00, date: getRelativeDate(15), type: "expense", category_id: createdCategories["Alimentação"] },
-            { description: "Consulta Médica", amount: 300.00, date: getRelativeDate(18), type: "expense", category_id: createdCategories["Saúde"] },
-            { description: "Internet Claro", amount: 120.00, date: getRelativeDate(20), type: "expense", category_id: createdCategories["Moradia"] },
+            { description: "Salário Empresa", amount: 8500.00, date: getRelativeDate(2), type: "credit", category_id: createdCategories["Salário"] },
+            { description: "Supermercado Extra", amount: 650.50, date: getRelativeDate(1), type: "debit", category_id: createdCategories["Alimentação"] },
+            { description: "Uber", amount: 35.00, date: getRelativeDate(0), type: "debit", category_id: createdCategories["Transporte"] },
+            { description: "Cinema e Pipoca", amount: 120.00, date: getRelativeDate(4), type: "debit", category_id: createdCategories["Lazer"] },
+            { description: "Aluguel", amount: 2500.00, date: getRelativeDate(5), type: "debit", category_id: createdCategories["Moradia"] },
+            { description: "Restaurante Fim de Semana", amount: 180.00, date: getRelativeDate(3), type: "debit", category_id: createdCategories["Alimentação"] },
+            { description: "Netflix", amount: 45.90, date: getRelativeDate(2), type: "debit", category_id: createdCategories["Assinaturas"] },
+            { description: "Spotify", amount: 21.90, date: getRelativeDate(1), type: "debit", category_id: createdCategories["Assinaturas"] },
+            { description: "Gasolina", amount: 200.00, date: getRelativeDate(7), type: "debit", category_id: createdCategories["Transporte"] },
+            { description: "Conta de Luz", amount: 150.00, date: getRelativeDate(6), type: "debit", category_id: createdCategories["Moradia"] },
+            { description: "Farmácia", amount: 95.00, date: getRelativeDate(8), type: "debit", category_id: createdCategories["Saúde"] },
+            { description: "Curso Udemy", amount: 39.90, date: getRelativeDate(9), type: "debit", category_id: createdCategories["Educação"] },
+            { description: "Freelance App", amount: 1200.00, date: getRelativeDate(10), type: "credit", category_id: createdCategories["Freelance"] },
+            { description: "Roupas Renner", amount: 350.00, date: getRelativeDate(12), type: "debit", category_id: createdCategories["Vestuário"] },
+            { description: "Ifood Hamburguer", amount: 75.00, date: getRelativeDate(15), type: "debit", category_id: createdCategories["Alimentação"] },
+            { description: "Consulta Médica", amount: 300.00, date: getRelativeDate(18), type: "debit", category_id: createdCategories["Saúde"] },
+            { description: "Internet Claro", amount: 120.00, date: getRelativeDate(20), type: "debit", category_id: createdCategories["Moradia"] },
 
             // Earlier in the Month (still within 30 days)
-            { description: "Salário Empresa", amount: 8500.00, date: getRelativeDate(28), type: "income", category_id: createdCategories["Salário"] },
-            { description: "Aluguel", amount: 2500.00, date: getRelativeDate(27), type: "expense", category_id: createdCategories["Moradia"] },
-            { description: "Supermercado Carrefour", amount: 800.00, date: getRelativeDate(25), type: "expense", category_id: createdCategories["Alimentação"] },
-            { description: "Gasolina", amount: 200.00, date: getRelativeDate(24), type: "expense", category_id: createdCategories["Transporte"] },
-            { description: "Manutenção Carro", amount: 450.00, date: getRelativeDate(22), type: "expense", category_id: createdCategories["Transporte"] },
-            { description: "Show Rock", amount: 250.00, date: getRelativeDate(21), type: "expense", category_id: createdCategories["Lazer"] },
-            { description: "Mensalidade Faculdade", amount: 1500.00, date: getRelativeDate(29), type: "expense", category_id: createdCategories["Educação"] }
+            { description: "Salário Empresa", amount: 8500.00, date: getRelativeDate(28), type: "credit", category_id: createdCategories["Salário"] },
+            { description: "Aluguel", amount: 2500.00, date: getRelativeDate(27), type: "debit", category_id: createdCategories["Moradia"] },
+            { description: "Supermercado Carrefour", amount: 800.00, date: getRelativeDate(25), type: "debit", category_id: createdCategories["Alimentação"] },
+            { description: "Gasolina", amount: 200.00, date: getRelativeDate(24), type: "debit", category_id: createdCategories["Transporte"] },
+            { description: "Manutenção Carro", amount: 450.00, date: getRelativeDate(22), type: "debit", category_id: createdCategories["Transporte"] },
+            { description: "Show Rock", amount: 250.00, date: getRelativeDate(21), type: "debit", category_id: createdCategories["Lazer"] },
+            { description: "Mensalidade Faculdade", amount: 1500.00, date: getRelativeDate(29), type: "debit", category_id: createdCategories["Educação"] }
         ];
 
         for (const t of transactionsData) {
