@@ -53,43 +53,43 @@ export const populateMockData = async () => {
             { description: "Consulta Médica", amount: 300.00, date: getRelativeDate(18), type: "expense", category_id: createdCategories["Saúde"] },
             { description: "Internet Claro", amount: 120.00, date: getRelativeDate(20), type: "expense", category_id: createdCategories["Moradia"] },
 
-            // Last Month
-            { description: "Salário Empresa", amount: 8500.00, date: getRelativeDate(32), type: "income", category_id: createdCategories["Salário"] },
-            { description: "Aluguel", amount: 2500.00, date: getRelativeDate(35), type: "expense", category_id: createdCategories["Moradia"] },
-            { description: "Supermercado Carrefour", amount: 800.00, date: getRelativeDate(40), type: "expense", category_id: createdCategories["Alimentação"] },
-            { description: "Gasolina", amount: 200.00, date: getRelativeDate(38), type: "expense", category_id: createdCategories["Transporte"] },
-            { description: "Manutenção Carro", amount: 450.00, date: getRelativeDate(45), type: "expense", category_id: createdCategories["Transporte"] },
-            { description: "Show Rock", amount: 250.00, date: getRelativeDate(42), type: "expense", category_id: createdCategories["Lazer"] },
-            { description: "Mensalidade Faculdade", amount: 1500.00, date: getRelativeDate(33), type: "expense", category_id: createdCategories["Educação"] }
+            // Earlier in the Month (still within 30 days)
+            { description: "Salário Empresa", amount: 8500.00, date: getRelativeDate(28), type: "income", category_id: createdCategories["Salário"] },
+            { description: "Aluguel", amount: 2500.00, date: getRelativeDate(27), type: "expense", category_id: createdCategories["Moradia"] },
+            { description: "Supermercado Carrefour", amount: 800.00, date: getRelativeDate(25), type: "expense", category_id: createdCategories["Alimentação"] },
+            { description: "Gasolina", amount: 200.00, date: getRelativeDate(24), type: "expense", category_id: createdCategories["Transporte"] },
+            { description: "Manutenção Carro", amount: 450.00, date: getRelativeDate(22), type: "expense", category_id: createdCategories["Transporte"] },
+            { description: "Show Rock", amount: 250.00, date: getRelativeDate(21), type: "expense", category_id: createdCategories["Lazer"] },
+            { description: "Mensalidade Faculdade", amount: 1500.00, date: getRelativeDate(29), type: "expense", category_id: createdCategories["Educação"] }
         ];
 
         for (const t of transactionsData) {
             await createTransaction(t);
         }
 
-        // 4. Create Investments (Diverse portfolio)
+        // 4. Create Investments (Diverse portfolio - keep purchase_date <= 30 to show in default filters)
         const investmentsData = [
             // Ações Brasileiras (Stocks)
-            { name: "Petrobras", symbol: "PETR4", quantity: 200, price: 34.50, currency: "BRL", notes: "Foco em dividendos", purchase_date: getRelativeDate(90), type: "stock" },
-            { name: "Vale", symbol: "VALE3", quantity: 100, price: 65.10, currency: "BRL", notes: "Setor de mineração", purchase_date: getRelativeDate(120), type: "stock" },
-            { name: "Itaú Unibanco", symbol: "ITUB4", quantity: 150, price: 32.20, currency: "BRL", notes: "Setor bancário", purchase_date: getRelativeDate(60), type: "stock" },
-            { name: "WEG", symbol: "WEGE3", quantity: 50, price: 38.00, currency: "BRL", notes: "Crescimento a longo prazo", purchase_date: getRelativeDate(45), type: "stock" },
+            { name: "Petrobras", symbol: "PETR4", quantity: 200, price: 34.50, currency: "BRL", notes: "Foco em dividendos", purchase_date: getRelativeDate(15), type: "stock" },
+            { name: "Vale", symbol: "VALE3", quantity: 100, price: 65.10, currency: "BRL", notes: "Setor de mineração", purchase_date: getRelativeDate(20), type: "stock" },
+            { name: "Itaú Unibanco", symbol: "ITUB4", quantity: 150, price: 32.20, currency: "BRL", notes: "Setor bancário", purchase_date: getRelativeDate(10), type: "stock" },
+            { name: "WEG", symbol: "WEGE3", quantity: 50, price: 38.00, currency: "BRL", notes: "Crescimento a longo prazo", purchase_date: getRelativeDate(5), type: "stock" },
             
             // FIIs (Funds)
-            { name: "Maxi Renda FII", symbol: "MXRF11", quantity: 1000, price: 10.20, currency: "BRL", notes: "Fundo de papel", purchase_date: getRelativeDate(150), type: "fund" },
-            { name: "HGLG FII", symbol: "HGLG11", quantity: 50, price: 160.00, currency: "BRL", notes: "Fundo de galpões logísticos", purchase_date: getRelativeDate(180), type: "fund" },
+            { name: "Maxi Renda FII", symbol: "MXRF11", quantity: 1000, price: 10.20, currency: "BRL", notes: "Fundo de papel", purchase_date: getRelativeDate(25), type: "fund" },
+            { name: "HGLG FII", symbol: "HGLG11", quantity: 50, price: 160.00, currency: "BRL", notes: "Fundo de galpões logísticos", purchase_date: getRelativeDate(28), type: "fund" },
             
             // BDRs (International Stocks)
-            { name: "Apple", symbol: "AAPL34", quantity: 30, price: 85.00, currency: "BRL", notes: "Tecnologia", purchase_date: getRelativeDate(200), type: "bdr" },
-            { name: "Microsoft", symbol: "MSFT34", quantity: 20, price: 95.50, currency: "BRL", notes: "Tecnologia e Cloud", purchase_date: getRelativeDate(210), type: "bdr" },
+            { name: "Apple", symbol: "AAPL34", quantity: 30, price: 85.00, currency: "BRL", notes: "Tecnologia", purchase_date: getRelativeDate(18), type: "bdr" },
+            { name: "Microsoft", symbol: "MSFT34", quantity: 20, price: 95.50, currency: "BRL", notes: "Tecnologia e Cloud", purchase_date: getRelativeDate(22), type: "bdr" },
 
             // ETFs
-            { name: "S&P 500 ETF", symbol: "IVVB11", quantity: 40, price: 290.00, currency: "BRL", notes: "Exposição ao mercado americano", purchase_date: getRelativeDate(250), type: "etf" },
-            { name: "Ibovespa ETF", symbol: "BOVA11", quantity: 60, price: 125.00, currency: "BRL", notes: "Exposição à bolsa brasileira", purchase_date: getRelativeDate(260), type: "etf" },
+            { name: "S&P 500 ETF", symbol: "IVVB11", quantity: 40, price: 290.00, currency: "BRL", notes: "Exposição ao mercado americano", purchase_date: getRelativeDate(26), type: "etf" },
+            { name: "Ibovespa ETF", symbol: "BOVA11", quantity: 60, price: 125.00, currency: "BRL", notes: "Exposição à bolsa brasileira", purchase_date: getRelativeDate(27), type: "etf" },
 
             // Criptomoedas
-            { name: "Bitcoin", symbol: "BTCBRL", quantity: 0.15, price: 300000.00, currency: "BRL", notes: "Reserva de valor", purchase_date: getRelativeDate(300), type: "criptomoedas" },
-            { name: "Ethereum", symbol: "ETHBRL", quantity: 1.5, price: 15000.00, currency: "BRL", notes: "Smart contracts", purchase_date: getRelativeDate(320), type: "criptomoedas" }
+            { name: "Bitcoin", symbol: "BTCBRL", quantity: 0.15, price: 300000.00, currency: "BRL", notes: "Reserva de valor", purchase_date: getRelativeDate(29), type: "criptomoedas" },
+            { name: "Ethereum", symbol: "ETHBRL", quantity: 1.5, price: 15000.00, currency: "BRL", notes: "Smart contracts", purchase_date: getRelativeDate(29), type: "criptomoedas" }
         ];
 
         for (const inv of investmentsData) {
