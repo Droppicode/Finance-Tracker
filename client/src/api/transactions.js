@@ -1,5 +1,5 @@
 import { db, auth } from './firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 
 const getTransactionsCollection = () => {
     if (!auth.currentUser) throw new Error("User not authenticated");
@@ -33,4 +33,14 @@ export const deleteTransaction = (id) => {
     const transactionsCol = getTransactionsCollection();
     const transactionDoc = doc(transactionsCol, id);
     return deleteDoc(transactionDoc);
+};
+
+export const deleteAllTransactions = async () => {
+    const transactionsCol = getTransactionsCollection();
+    const snapshot = await getDocs(transactionsCol);
+    const batch = writeBatch(db);
+    snapshot.docs.forEach((document) => {
+        batch.delete(document.ref);
+    });
+    await batch.commit();
 };

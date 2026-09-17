@@ -17,6 +17,7 @@ export default function DashboardPage() {
     categories,
     processStatement,
     deleteTransaction,
+    clearAllTransactions,
     updateTransactionCategory,
     updateTransactionDetails,
     addCategory,
@@ -63,6 +64,7 @@ export default function DashboardPage() {
           transactions={transactions}
           categories={categories}
           deleteTransaction={deleteTransaction}
+          clearAllTransactions={clearAllTransactions}
           updateTransactionCategory={updateTransactionCategory}
           updateTransactionDetails={updateTransactionDetails}
           addCategory={addCategory}

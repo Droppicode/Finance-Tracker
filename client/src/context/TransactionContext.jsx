@@ -1,11 +1,11 @@
 import { createContext, useState, useEffect, useContext, useMemo } from 'react';
 import { AuthContext } from './AuthContext';
 import { useUtils } from './UtilsContext';
-import { getTransactions, createTransaction, updateTransaction, deleteTransaction } from '../api/transactions';
+import { getTransactions, createTransaction, updateTransaction, deleteTransaction, deleteAllTransactions } from '../api/transactions';
 import { getCategories, createCategory, deleteCategory } from '../api/categories';
 import { processStatement } from '../api/statement';
 import { getProfile, updateProfile } from '../api/profile';
-import { extractTextFromPDF } from '../api/pdfExtractor'; // Import the new PDF extractor
+import { fileToBase64 } from '../api/pdfExtractor';
 
 const TransactionContext = createContext();
 
@@ -121,9 +121,11 @@ export const TransactionProvider = ({ children }) => {
     console.log("Starting handleProcessStatement for file:", file.name);
     try {
       showNotification('Processando extrato...', 'info');
-      const extractedText = await extractTextFromPDF(file); // Extract text from PDF
-      console.log("PDF text extracted. Sending to API...");
-      const newTransactionsFromAI = await processStatement(extractedText); // Pass extracted text to API
+      const fileBase64 = await fileToBase64(file);
+      const categoriesStr = categories.map(c => c.name).join(', ');
+      
+      console.log("Sending PDF as Base64 to API...");
+      const newTransactionsFromAI = await processStatement(fileBase64, categoriesStr);
       console.log("API call for processStatement successful. New transactions received:", newTransactionsFromAI.length);
 
       if (!newTransactionsFromAI || newTransactionsFromAI.length === 0) {
@@ -136,7 +138,9 @@ export const TransactionProvider = ({ children }) => {
       const categoryNameToIdMap = new Map(allCategories.map(c => [c.name, c.id]));
 
       // 2. Find and create any new categories suggested by the AI
-      const newCategoryNames = [...new Set(newTransactionsFromAI.map(t => t.category).filter(Boolean))];
+      const newCategoryNames = [...new Set(newTransactionsFromAI.map(t => {
+        return (t.confidence !== undefined && t.confidence < 0.35) ? 'Outros' : t.category;
+      }).filter(Boolean))];
       const categoriesToCreate = newCategoryNames.filter(name => !categoryNameToIdMap.has(name));
 
       if (categoriesToCreate.length > 0) {
@@ -155,7 +159,8 @@ export const TransactionProvider = ({ children }) => {
 
       // 3. Prepare transaction data for creation
       const transactionsToCreate = newTransactionsFromAI.map(t => {
-        const category = updatedCategoryNameToObjMap.get(t.category);
+        const finalCategoryName = (t.confidence !== undefined && t.confidence < 0.35) ? 'Outros' : t.category;
+        const category = updatedCategoryNameToObjMap.get(finalCategoryName);
         return {
           description: t.description,
           amount: t.amount,
@@ -180,7 +185,11 @@ export const TransactionProvider = ({ children }) => {
       }));
 
       // 6. Update the transactions state
-      setTransactions(prev => [...prev, ...newTransactionsWithCategory].sort((a, b) => new Date(b.date) - new Date(a.date)));
+      setTransactions(prev => {
+        const combined = [...prev, ...newTransactionsWithCategory];
+        const unique = Array.from(new Map(combined.map(t => [t.id, t])).values());
+        return unique.sort((a, b) => new Date(b.date) - new Date(a.date));
+      });
 
       showNotification('Extrato processado e transações adicionadas!', 'success');
     } catch (err) {
@@ -216,6 +225,24 @@ export const TransactionProvider = ({ children }) => {
       console.error("Error deleting transaction:", err);
       setTransactions(originalTransactions);
       showNotification("Erro ao excluir transação.", "error");
+    }
+  };
+
+  const handleClearAllTransactions = async () => {
+    const originalTransactions = [...transactions];
+    showNotification('Limpando todas as transações...', 'info');
+    // Optimistically update the UI
+    setTransactions([]);
+
+    try {
+      // Use the new bulk deletion API
+      await deleteAllTransactions();
+      showNotification('Todas as transações foram removidas!', 'success');
+    } catch (err) {
+      console.error("Error clearing all transactions:", err);
+      showNotification('Ocorreu um erro ao limpar as transações. Restaurando dados.', 'error');
+      // Rollback UI on error
+      setTransactions(originalTransactions);
     }
   };
 
@@ -291,6 +318,7 @@ export const TransactionProvider = ({ children }) => {
     processStatement: handleProcessStatement,
     addTransaction: handleAddTransaction,
     deleteTransaction: handleDeleteTransaction,
+    clearAllTransactions: handleClearAllTransactions,
     updateTransactionCategory: handleUpdateTransactionCategory,
     updateTransactionDetails,
     addCategory: handleAddCategory,

@@ -19,6 +19,7 @@ export default function TransactionsCard({
   transactions,
   categories,
   deleteTransaction,
+  clearAllTransactions,
   updateTransactionCategory,
   updateTransactionDetails,
   addCategory,
@@ -69,7 +70,11 @@ export default function TransactionsCard({
                   {/* Filters for large screens */}
 
                   <div className="hidden md:flex flex-wrap items-center gap-4">
-
+                    {transactions && transactions.length > 0 && (
+                      <Button variant="secondary" className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={clearAllTransactions}>
+                        Limpar Todas
+                      </Button>
+                    )}
                     <CategoryFilter
                       options={categoryOptions}
                       selectedItems={selectedCategoryIds}
