@@ -42,16 +42,41 @@
 
 ### Instalação
 
+Este projeto está dividido em duas aplicações separadas: o frontend (`client/`) e o backend serverless (`api/`). Para rodar o projeto localmente, você precisará iniciar ambos.
+
+**1. Configuração do Backend (Vercel Serverless API)**
 ```bash
 # Clone o repositório
 git clone https://github.com/Droppicode/Finance-Tracker.git
+cd Finance-Tracker
+
+# Instale a CLI da Vercel se ainda não tiver
+npm i -g vercel
+
+# Crie um arquivo .env na raiz do projeto para o backend:
+# BRAPI_API_KEY=sua_chave_brapi
+# GEMINI_API_KEY=sua_chave_gemini
+# GITHUB_TOKEN=seu_token_github
+# GITHUB_REPO_OWNER=seu_usuario_github
+# GITHUB_REPO_NAME=Finance-Tracker
+
+# Rode o backend localmente (iniciará em http://localhost:3000)
+vercel dev
+```
+
+**2. Configuração do Frontend**
+Abra uma nova aba no terminal:
+```bash
 cd Finance-Tracker/client
 
 # Configure as variáveis de ambiente
 cp .env.example .env
-# Edite .env com suas credenciais Firebase, GitHub e Brapi
 
-# Instale as dependências e rode o projeto
+# IMPORTANTE: Edite seu client/.env para apontar para o backend local:
+# VITE_API_BASE_URL=http://localhost:3000
+# Preencha também suas credenciais do Firebase e Google Client ID.
+
+# Instale as dependências e rode o frontend
 npm install
 npm run dev
 ```
