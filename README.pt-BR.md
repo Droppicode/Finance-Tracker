@@ -87,7 +87,7 @@ npm run dev
 
 🎉 Acesse `http://localhost:5173` e comece a monitorar seus investimentos!
 
-## 🧪 Modo Recrutador / Teste
+## 🧪 Modo Demonstração / Teste
 
 Quer testar a aplicação na prática sem ter que cadastrar nada na mão? Criamos um modo de **Acesso de Visitante**!
 Basta clicar em **"Entrar como Visitante / Teste"** na tela de login. Você entrará em uma sessão limpa e isolada, onde poderá clicar no "Botão Mágico" para preencher o aplicativo instantaneamente com dezenas de dados fakes super realistas, incluindo:

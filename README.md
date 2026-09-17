@@ -87,7 +87,7 @@ npm run dev
 
 🎉 Navigate to `http://localhost:5173` and start tracking your investments!
 
-## 🧪 Recruiter / Test Mode
+## 🧪 Demo / Test Mode
 
 Want to test the application without typing any data manually? We've built a **Guest Login** mode!
 Just click **"Entrar como Visitante / Teste"** on the login page. You will enter a clean, isolated session where you can click the "Magic Button" to instantly populate the application with dozens of realistic mock data, including:
