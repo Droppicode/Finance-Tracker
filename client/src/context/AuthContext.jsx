@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { auth } from '../api/firebase';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut, signInAnonymously } from 'firebase/auth';
 
 export const AuthContext = createContext();
 
@@ -23,6 +23,10 @@ export const AuthProvider = ({ children }) => {
         return signInWithEmailAndPassword(auth, email, password);
     };
 
+    const loginAnonymously = () => {
+        return signInAnonymously(auth);
+    };
+
     const logout = () => {
         return signOut(auth);
     };
@@ -32,7 +36,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
+        <AuthContext.Provider value={{ user, isAuthenticated, login, loginAnonymously, logout }}>
             {children}
         </AuthContext.Provider>
     );

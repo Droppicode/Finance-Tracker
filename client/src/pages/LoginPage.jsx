@@ -60,7 +60,17 @@ const GoogleLoginButton = () => {
 
 const LoginPage = () => {
     const navigate = useNavigate();
-    const { isAuthenticated } = useContext(AuthContext);
+    const { isAuthenticated, loginAnonymously } = useContext(AuthContext);
+
+    const handleGuestLogin = async () => {
+        try {
+            await loginAnonymously();
+            navigate('/');
+        } catch (error) {
+            console.error('Guest login error:', error);
+            alert('Não foi possível entrar como visitante. Verifique se o login anônimo está habilitado no Firebase.');
+        }
+    };
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -106,8 +116,21 @@ const LoginPage = () => {
                     <h2 className="text-xl font-semibold text-center text-white md:text-2xl">
                         Acesse sua conta
                     </h2>
-                    <div className="flex justify-center">
+                    <div className="flex flex-col items-center w-full gap-4">
                         <GoogleLoginButton />
+                        
+                        <div className="flex items-center w-full my-2">
+                            <hr className="flex-1 border-gray-600" />
+                            <span className="mx-4 text-sm text-gray-400">ou</span>
+                            <hr className="flex-1 border-gray-600" />
+                        </div>
+
+                        <button
+                            onClick={handleGuestLogin}
+                            className="flex items-center justify-center w-full px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75 transition duration-200 ease-in-out"
+                        >
+                            Entrar como Visitante / Teste
+                        </button>
                     </div>
                     <div className="text-xs text-center text-gray-500">
                         <a href="#" className="hover:underline">Termos de Serviço</a>

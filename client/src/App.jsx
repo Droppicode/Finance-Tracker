@@ -14,6 +14,7 @@ import InvestmentDetailPage from './pages/InvestmentDetailPage';
 import LoginPage from './pages/LoginPage';
 import Sidebar from './components/Sidebar';
 import Notification from './components/shared/Notification';
+import MockDataButton from './components/shared/MockDataButton';
 
 const MainLayout = ({ children, isDarkMode, setIsDarkMode }) => {
   const { user, logout } = useContext(AuthContext);
@@ -33,9 +34,10 @@ const MainLayout = ({ children, isDarkMode, setIsDarkMode }) => {
         user={user}
         logout={logout}
       />
-      <main className="flex-1 overflow-y-auto p-5 md:p-8 bg-gray-100 dark:bg-gray-900">
+      <main className="flex-1 overflow-y-auto p-5 md:p-8 bg-gray-100 dark:bg-gray-900 relative">
         <Notification />
         {children}
+        <MockDataButton />
       </main>
     </div>
   );
