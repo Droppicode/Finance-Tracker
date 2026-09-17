@@ -7,6 +7,12 @@
 > **Your money, your rules.**  
 > Track expenses, monitor investments, and make smarter financial decisions — all in an elegant and intuitive interface.
 
+> [!WARNING]
+> **Project Status Notice**
+> This application is no longer under active development. I have created a new application, **[Zeno Cash](https://github.com/Droppicode/Zeno-Cash)**, entirely focused on expense tracking and *offline* monitoring of transactions, banks, and credit cards. 
+> 
+> *Finance-Tracker* (this repository) has pivoted to focus exclusively on **investments**, utilizing the Brapi API and GitHub Actions.
+
 <p align="center">
   <img src="https://img.shields.io/badge/React-19.1-61DAFB?style=flat&logo=react" alt="React"/>
   <img src="https://img.shields.io/badge/Vite-7.1-646CFF?style=flat&logo=vite" alt="Vite"/>
