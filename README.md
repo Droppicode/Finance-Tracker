@@ -14,6 +14,12 @@
 > Monitor your investment portfolio and track stock quotes in an elegant and intuitive interface.
 
 <p align="center">
+  <a href="https://marcos-finance-tracker.vercel.app" target="_blank">
+    <img src="https://img.shields.io/badge/Live_Demo-marcos--finance--tracker.vercel.app-success?style=for-the-badge&logo=vercel" alt="Live Demo" />
+  </a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/React-19.1-61DAFB?style=flat&logo=react" alt="React"/>
   <img src="https://img.shields.io/badge/Vite-7.1-646CFF?style=flat&logo=vite" alt="Vite"/>
   <img src="https://img.shields.io/badge/TailwindCSS-4.1-06B6D4?style=flat&logo=tailwindcss" alt="Tailwind"/>
