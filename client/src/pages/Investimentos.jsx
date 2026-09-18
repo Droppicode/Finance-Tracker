@@ -130,6 +130,7 @@ export default function InvestimentosPage() {
                     endDate={endDate}
                     updateDates={updateDates}
                     labelFromType={labelFromType}
+                    onInvestmentSelected={handleInvestmentSelection}
                   />
                 </div>
                 <div className="lg:col-span-1">
@@ -147,6 +148,7 @@ export default function InvestimentosPage() {
                   endDate={endDate}
                   updateDates={updateDates}
                   labelFromType={labelFromType}
+                  onInvestmentSelected={handleInvestmentSelection}
                 />
               </div>
             )}

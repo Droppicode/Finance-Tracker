@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 
-const InvestmentSearchPopover = ({ searchTerm, searchResults, loadingSearch, searchError, onSelectInvestment, onClose, searchInputRef }) => {
+const InvestmentSearchPopover = ({ searchTerm, searchResults, loadingSearch, searchError, onSelectInvestment, onClose, searchInputRef, hasSearched }) => {
   const wrapperRef = useRef(null);
 
   useEffect(() => {
@@ -46,7 +46,9 @@ const InvestmentSearchPopover = ({ searchTerm, searchResults, loadingSearch, sea
         </div>
       )}
       {searchResults.length === 0 && searchTerm.trim() && !loadingSearch && !searchError && (
-        <p className="text-gray-500 dark:text-gray-400">Nenhum resultado encontrado.</p>
+        <p className="text-gray-500 dark:text-gray-400">
+          {hasSearched ? "Nenhum resultado encontrado." : "Aperte Enter ou clique no botão para pesquisar..."}
+        </p>
       )}
     </div>
   );

@@ -109,7 +109,7 @@ export const dispatchGitHubAction = async (symbol) => {
  */
 export const waitForHistoricalData = async (
     symbol,
-    maxAttempts = 10,
+    maxAttempts = 24,
     intervalMs = 5000
 ) => {
     console.log(`Waiting for data: ${symbol} (max ${maxAttempts} attempts)`);

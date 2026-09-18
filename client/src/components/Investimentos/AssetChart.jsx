@@ -25,7 +25,6 @@ const AssetChart = ({ symbol }) => {
     const [loadingMessage, setLoadingMessage] = useState('Carregando gráfico...');
     const [error, setError] = useState(null);
     const [range, setRange] = useState('1mo'); // Default range
-    const [currentSymbol, setCurrentSymbol] = useState(null);
 
     // Range configurations
     const rangeConfigs = {
@@ -38,28 +37,21 @@ const AssetChart = ({ symbol }) => {
         'max': { label: 'Máx', days: null },
     };
 
-    // Clear cache when symbol changes
-    useEffect(() => {
-        if (symbol !== currentSymbol) {
-            setAllData([]);
-            setError(null);
-            setCurrentSymbol(symbol);
-        }
-    }, [symbol, currentSymbol]);
+
 
     // Fetch all historical data (max range) once per symbol
-    const fetchAllData = async () => {
-        if (!symbol) return;
+    const fetchAllData = async (symbolToFetch) => {
+        if (!symbolToFetch) return;
 
         setLoading(true);
         setError(null);
-        setLoadingMessage('Buscando dados históricos...');
+        setLoadingMessage('Buscando dados históricos... (Os dados salvos são atualizados diariamente, só precisa esperar a primeira vez!)');
 
         try {
             // Get all data from Firestore (or trigger GitHub Actions if needed)
-            const firestoreData = await getHistoricalData(symbol);
+            const firestoreData = await getHistoricalData(symbolToFetch);
 
-            console.log(`Fetched all historical data for ${symbol}:`, firestoreData);
+            console.log(`Fetched all historical data for ${symbolToFetch}:`, firestoreData);
 
             // Format data for the chart
             const formatData = (data) => {
@@ -90,10 +82,12 @@ const AssetChart = ({ symbol }) => {
         }
     };
 
-    // Load data on mount or when symbol changes
+    // Load data when symbol changes
     useEffect(() => {
-        if (symbol && allData.length === 0 && !loading && !error) {
-            fetchAllData();
+        if (symbol) {
+            setAllData([]);
+            setError(null);
+            fetchAllData(symbol);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [symbol]);

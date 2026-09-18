@@ -189,12 +189,11 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
                   setShowSearchPopover(true);
                   handleSearch(assetName); // Trigger search on button click
                 }}
-                className="block lg:hidden"
+                className="ml-2"
                 variant="secondary"
-                size="icon"
                 title="Pesquisar"
               >
-                <Search className="w-6 h-6" />
+                <Search className="w-5 h-5 mr-1" /> Pesquisar
               </Button>
             </div>
             {showSearchPopover && (
@@ -206,6 +205,7 @@ export default function AddInvestmentForm({ addInvestment, loading, investmentOp
                 onSelectInvestment={handleSelectInvestment}
                 onClose={() => setShowSearchPopover(false)}
                 searchInputRef={searchInputRef}
+                hasSearched={lastSearchTerm !== null && lastSearchTerm === assetName}
               />
             )}
           </div>

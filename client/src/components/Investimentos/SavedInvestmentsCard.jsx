@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Card from '../shared/Card';
 import Button from '../shared/Button';
 import ToggleSwitch from '../shared/ToggleSwitch';
@@ -7,6 +7,8 @@ import DateRangePicker from '../shared/DateRangePicker';
 import { Trash2, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import FilterButton from '../shared/FilterButton';
 import FilterModal from '../shared/FilterModal';
+import { fetchHistoricalDataFromFirestore } from '../../api/historicalData';
+import { getQuote } from '../../api/brapi';
 
 export default function SavedInvestmentsCard({
   investments,
@@ -16,7 +18,8 @@ export default function SavedInvestmentsCard({
   startDate,
   endDate,
   updateDates,
-  labelFromType
+  labelFromType,
+  onInvestmentSelected
 }) {
   const [groupByAsset, setGroupByAsset] = useState(false);
   const [filterType, setFilterType] = useState([]);
@@ -24,6 +27,34 @@ export default function SavedInvestmentsCard({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [currentPrices, setCurrentPrices] = useState({});
+
+  useEffect(() => {
+    const fetchCurrentPrices = async () => {
+      if (!investments || investments.length === 0) return;
+
+      const uniqueSymbols = [...new Set(investments.map(inv => inv.symbol))];
+
+      const prices = {};
+      for (const symbol of uniqueSymbols) {
+        try {
+          const data = await fetchHistoricalDataFromFirestore(symbol);
+          if (data && data.status === 'completed' && data.data && data.data.length > 0) {
+            const latestData = data.data[data.data.length - 1];
+            if (latestData && latestData.close) {
+              prices[symbol] = latestData.close;
+            }
+          }
+        } catch (error) {
+          console.error(`Erro ao buscar preço atual de ${symbol}:`, error);
+        }
+      }
+
+      setCurrentPrices(prices);
+    };
+
+    fetchCurrentPrices();
+  }, [investments]);
 
   const handleInvestmentClick = (id) => {
     setExpandedId(prevId => (prevId === id ? null : id));
@@ -32,6 +63,22 @@ export default function SavedInvestmentsCard({
   const handleRemoveClick = (e, id) => {
     e.stopPropagation();
     removeInvestment(id);
+  };
+
+  const handleDesktopRowClick = async (inv, e) => {
+    if (e.target.closest('button')) return;
+    
+    if (onInvestmentSelected) {
+      onInvestmentSelected({ symbol: inv.symbol, longName: inv.name, shortName: inv.name });
+      try {
+        const quote = await getQuote(inv.symbol);
+        if (quote) {
+          onInvestmentSelected(quote);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar detalhes:", error);
+      }
+    }
   };
 
   const processedInvestments = useMemo(() => {
@@ -130,9 +177,17 @@ export default function SavedInvestmentsCard({
                     >
                       <div className="flex-1 flex items-center justify-between">
                         <span className="font-bold text-gray-800 dark:text-gray-100 truncate">{inv.symbol}</span>
-                        <p className="font-medium text-gray-800 dark:text-gray-100">
-                          {(inv.quantity * inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </p>
+                        <div className="text-right">
+                          <p className="font-medium text-gray-800 dark:text-gray-100">
+                            {(inv.quantity * inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </p>
+                          {currentPrices[inv.symbol] && (
+                            <p className={`text-xs font-semibold ${((inv.quantity * currentPrices[inv.symbol]) - (inv.quantity * inv.price)) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                              {(((inv.quantity * currentPrices[inv.symbol]) - (inv.quantity * inv.price)) >= 0 ? '+' : '')}
+                              {((inv.quantity * currentPrices[inv.symbol]) - (inv.quantity * inv.price)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       <ChevronDown className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ml-2 ${isExpanded ? 'rotate-180' : ''}`} />
                     </div>
@@ -167,8 +222,11 @@ export default function SavedInvestmentsCard({
                     )}
                   </div>
 
-                  {/* Desktop View: Full details, not clickable */}
-                  <div className="hidden md:flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                  {/* Desktop View: Full details, clickable with hover */}
+                  <div 
+                    className="hidden md:flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors duration-200"
+                    onClick={(e) => handleDesktopRowClick(inv, e)}
+                  >
                     <div className="flex items-center gap-4 grow">
                       <div>
                         <span className="font-bold text-gray-800 dark:text-gray-100">{inv.symbol}</span>
@@ -189,6 +247,17 @@ export default function SavedInvestmentsCard({
                           {parseFloat(inv.quantity).toFixed(2)} x {parseFloat(inv.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </p>
                       </div>
+                      {currentPrices[inv.symbol] && (
+                        <div className="text-right min-w-[100px]">
+                          <p className="font-medium text-gray-800 dark:text-gray-100">
+                            {(inv.quantity * currentPrices[inv.symbol]).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </p>
+                          <p className={`text-sm font-bold ${((inv.quantity * currentPrices[inv.symbol]) - (inv.quantity * inv.price)) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                            {(((inv.quantity * currentPrices[inv.symbol]) - (inv.quantity * inv.price)) >= 0 ? '+' : '')}
+                            {((inv.quantity * currentPrices[inv.symbol]) - (inv.quantity * inv.price)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </p>
+                        </div>
+                      )}
                       {inv.type && (
                         <span className="text-xs w-24 text-center px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">{labelFromType(inv.type)}</span>
                       )}
