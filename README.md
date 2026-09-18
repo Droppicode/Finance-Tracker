@@ -28,7 +28,7 @@
 </p>
 
 <p align="center">
-  <img src=".github/assets/investments.png" alt="Fin-Track Investments Dashboard" width="800" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />
+  <img src=".github/assets/fintrack.png" alt="Fin-Track Investments Dashboard" width="800" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />
 </p>
 
 ---

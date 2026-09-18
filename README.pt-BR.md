@@ -14,6 +14,12 @@
 > Monitore seu portfólio de investimentos e acompanhe as cotações em uma interface elegante e intuitiva.
 
 <p align="center">
+  <a href="https://marcos-finance-tracker.vercel.app" target="_blank">
+    <img src="https://img.shields.io/badge/Live_Demo-marcos--finance--tracker.vercel.app-success?style=for-the-badge&logo=vercel" alt="Live Demo" />
+  </a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/React-19.1-61DAFB?style=flat&logo=react" alt="React"/>
   <img src="https://img.shields.io/badge/Vite-7.1-646CFF?style=flat&logo=vite" alt="Vite"/>
   <img src="https://img.shields.io/badge/TailwindCSS-4.1-06B6D4?style=flat&logo=tailwindcss" alt="Tailwind"/>
@@ -22,7 +28,7 @@
 </p>
 
 <p align="center">
-  <img src=".github/assets/investments.png" alt="Dashboard de Investimentos do Fin-Track" width="800" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />
+  <img src=".github/assets/fintrack.png" alt="Dashboard de Investimentos do Fin-Track" width="800" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />
 </p>
 
 ---
