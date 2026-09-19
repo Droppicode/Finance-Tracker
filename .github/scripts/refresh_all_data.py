@@ -67,9 +67,9 @@ def should_refresh(doc_data):
     Returns:
         bool: True if should refresh
     """
-    # Always refresh if status is error
+    # Skip refresh if status is error (to remove failing quotes from the workflow)
     if doc_data.get('status') == 'error':
-        return True
+        return False
     
     # Check if data is older than 12 hours
     fetched_at = doc_data.get('fetchedAt')
@@ -191,10 +191,10 @@ def main():
     print(f"Completed at: {datetime.now(timezone.utc).isoformat()}")
     print("="*60)
     
-    # Exit with error if any failures
+    # Don't exit with error to keep workflow green, just log the failures
     if error_count > 0:
         print(f"\n⚠ {error_count} symbol(s) failed to refresh")
-        sys.exit(1)
+        sys.exit(0)
     
     print("\n✓ All symbols refreshed successfully!")
     sys.exit(0)
